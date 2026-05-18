@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block title %}Inicio — Hospital Carlos Lanfranco La Hoz{% endblock %}
+
+{% block extra_css %}
+<style>
+/* HERO */
+.hero{
+  background: linear-gradient(120deg,rgba(26,75,140,.88) 40%,rgba(37,99,176,.6)),
+              url('https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=1400&q=80') center/cover no-repeat;
+  color:white;min-height:520px;display:flex;align-items:center;
+}
+.hero-inner{max-width:1200px;margin:auto;padding:60px 24px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;}
+.hero-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;line-height:1.15;margin-bottom:16px;}
+.hero-sub{font-size:1.1rem;color:#cbd5e1;margin-bottom:32px;}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;}
+.hero-cta{background:white;color:var(--azul)!important;font-weight:800;font-size:1rem;padding:14px 32px;border-radius:12px;display:inline-flex;align-items:center;gap:10px;transition:.2s;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+.hero-cta:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.hero-cta-sec{border:2px solid white;color:white;font-weight:700;padding:12px 28px;border-radius:12px;display:inline-flex;align-items:center;gap:8px;transition:.2s;}
+.hero-cta-sec:hover{background:rgba(255,255,255,.15);}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px;}
+.stat{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:12px;padding:16px;text-align:center;border:1px solid rgba(255,255,255,.2);}
+.stat-num{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;color:#93c5fd;}
+.stat-label{font-size:.78rem;color:#cbd5e1;margin-top:2px;}
+
+/* IA BANNER */
+.ia-banner{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:white;padding:32px 24px;text-align:center;}
+.ia-banner-inner{max-width:900px;margin:auto;}
+.ia-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,.3);border:1px solid rgba(59,130,246,.5);color:#93c5fd;padding:6px 16px;border-radius:20px;font-size:.82rem;font-weight:700;margin-bottom:14px;}
+.ia-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;margin-bottom:10px;}
+.ia-desc{color:#94a3b8;font-size:.95rem;margin-bottom:20px;}
+.ia-features{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:20px;}
+.ia-feat{display:flex;align-items:center;gap:8px;font-size:.88rem;color:#cbd5e1;}
+
+/* ESPECIALIDADES */
+.section{max-width:1200px;margin:0 auto;padding:60px 24px;}
+.section-title{text-align:center;font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:var(--azul);margin-bottom:8px;}
+.section-sub{text-align:center;color:#64748b;margin-bottom:40px;font-size:.95rem;}
+.esp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:24px;}
+.esp-card{background:white;border-radius:16px;padding:28px 20px;text-align:center;box-shadow:0 2px 16px rgba(26,75,140,.08);border:2px solid transparent;transition:.25s;cursor:pointer;}
+.esp-card:hover{border-color:var(--azul-medio);transform:translateY(-4px);box-shadow:var(--sombra);}
+.esp-icon{font-size:2.8rem;margin-bottom:14px;}
+.esp-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.05rem;color:var(--azul);margin-bottom:8px;}
+.esp-desc{font-size:.83rem;color:#64748b;line-height:1.6;}
+.esp-btn{margin-top:14px;display:inline-block;font-size:.82rem;font-weight:700;color:var(--azul-medio);border:1.5px solid var(--azul-medio);padding:6px 16px;border-radius:20px;transition:.2s;}
+.esp-card:hover .esp-btn{background:var(--azul-medio);color:white;}
+
+/* NOSOTROS */
+.nosotros{background:linear-gradient(135deg,var(--azul-claro),#f0f9ff);padding:60px 24px;}
+.nosotros-inner{max-width:1200px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
+.nos-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;color:var(--azul);margin-bottom:16px;}
+.nos-text{color:#475569;line-height:1.8;margin-bottom:20px;font-size:.95rem;}
+.nos-features{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.nos-feat{display:flex;align-items:flex-start;gap:10px;padding:12px;background:white;border-radius:10px;box-shadow:0 2px 8px rgba(26,75,140,.07);}
+.nos-feat-icon{font-size:1.4rem;flex-shrink:0;}
+.nos-feat-text{font-size:.83rem;font-weight:600;color:var(--texto);}
+.nos-img{border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(26,75,140,.2);}
+.nos-img img{width:100%;height:340px;object-fit:cover;}
+
+/* CÓMO FUNCIONA */
+.steps{background:white;padding:60px 24px;}
+.steps-inner{max-width:1000px;margin:auto;}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-top:40px;}
+.step{text-align:center;padding:24px 16px;}
+.step-num{width:52px;height:52px;border-radius:50%;background:var(--azul);color:white;font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.3rem;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.step-title{font-weight:700;font-size:1rem;color:var(--azul);margin-bottom:8px;}
+.step-desc{font-size:.83rem;color:#64748b;line-height:1.6;}
+
+/* URGENCIAS */
+.urgencias{background:linear-gradient(135deg,#dc2626,#991b1b);color:white;padding:40px 24px;text-align:center;}
+.urgencias-inner{max-width:700px;margin:auto;}
+.urgencias h2{font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;margin-bottom:10px;}
+.urgencias p{font-size:.95rem;color:#fca5a5;margin-bottom:20px;}
+.urgencias-num{font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.4rem;letter-spacing:2px;margin:8px 0;}
+
+@media(max-width:768px){
+  .hero-inner{grid-template-columns:1fr;}
+  .hero-title{font-size:1.8rem;}
+  .nosotros-inner{grid-template-columns:1fr;}
+  .nos-img{display:none;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <h1 class="hero-title">Reserva Tu Cita en Línea<br><span style="color:#93c5fd;">Fácil y Rápido.</span></h1>
+      <p class="hero-sub">Tu Salud es Nuestra Prioridad.<br>Atención de calidad en Puente Piedra y Lima Norte.</p>
+      <div class="hero-btns">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('solicitar_cita') }}" class="hero-cta"><i class="fas fa-calendar-plus"></i> Solicitar Cita Ahora</a>
+        {% else %}
+          <a href="{{ url_for('registro') }}" class="hero-cta"><i class="fas fa-calendar-plus"></i> Solicitar Cita Ahora</a>
+          <a href="{{ url_for('login') }}" class="hero-cta-sec"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
+        {% endif %}
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Especialidades</div></div>
+        <div class="stat"><div class="stat-num">200+</div><div class="stat-label">Médicos</div></div>
+        <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Urgencias</div></div>
+      </div>
+    </div>
+    <div></div>
+  </div>
+</section>
+
+<!-- IA BANNER -->
+<section class="ia-banner" id="ia">
+  <div class="ia-banner-inner">
+    <div class="ia-badge"><i class="fas fa-microphone-alt"></i> Próximamente — IA por Voz</div>
+    <h2 class="ia-title">🤖 Citas Médicas con Inteligencia Artificial</h2>
+    <p class="ia-desc">Pronto podrás reservar tu cita hablando con nuestro asistente virtual. Sin formularios, sin esperas. Solo habla y listo.</p>
+    <div class="ia-features">
+      <div class="ia-feat"><i class="fas fa-microphone" style="color:#60a5fa;"></i> Reconocimiento de voz en tiempo real</div>
+      <div class="ia-feat"><i class="fas fa-brain" style="color:#a78bfa;"></i> IA que entiende tus síntomas</div>
+      <div class="ia-feat"><i class="fas fa-calendar-check" style="color:#34d399;"></i> Agenda automática sin clicks</div>
+    </div>
+    <div style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:16px;display:inline-block;">
+      <p style="color:#93c5fd;font-size:.88rem;"><i class="fas fa-clock"></i> &nbsp;Mientras tanto, usa nuestro sistema manual de citas disponible ahora mismo.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ESPECIALIDADES -->
+<section class="section" id="especialidades">
+  <h2 class="section-title">Especialidades Destacadas</h2>
+  <p class="section-sub">Contamos con un equipo multidisciplinario para cuidar tu salud en todas las etapas de la vida.</p>
+  <div class="esp-grid">
+    {% for esp in especialidades %}
+    <div class="esp-card">
+      <div class="esp-icon">{{ esp.icono }}</div>
+      <div class="esp-name">{{ esp.nombre }}</div>
+      <div class="esp-desc">{{ esp.descripcion }}</div>
+      <a href="{{ url_for('solicitar_cita') if current_user.is_authenticated else url_for('login') }}" class="esp-btn">Reservar Cita</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- NOSOTROS -->
+<section class="nosotros" id="nosotros">
+  <div class="nosotros-inner">
+    <div>
+      <h2 class="nos-title">Hospital de Referencia<br>en Lima Norte</h2>
+      <p class="nos-text">El Hospital Carlos Lanfranco La Hoz es un establecimiento público de salud de nivel II-2, ubicado en Puente Piedra. Brindamos atención médica integral a la comunidad de Lima Norte con tecnología moderna y un equipo de profesionales altamente capacitados.</p>
+      <div class="nos-features">
+        <div class="nos-feat"><div class="nos-feat-icon">🏥</div><div class="nos-feat-text">Infraestructura moderna</div></div>
+        <div class="nos-feat"><div class="nos-feat-icon">👨‍⚕️</div><div class="nos-feat-text">Médicos especializados</div></div>
+        <div class="nos-feat"><div class="nos-feat-icon">🧪</div><div class="nos-feat-text">Laboratorio clínico</div></div>
+        <div class="nos-feat"><div class="nos-feat-icon">🚑</div><div class="nos-feat-text">Emergencias 24/7</div></div>
+        <div class="nos-feat"><div class="nos-feat-icon">💊</div><div class="nos-feat-text">Farmacia en sede</div></div>
+        <div class="nos-feat"><div class="nos-feat-icon">📋</div><div class="nos-feat-text">Citas en línea</div></div>
+      </div>
+    </div>
+    <div class="nos-img">
+      <img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=700&q=80" alt="Hospital"/>
+    </div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section class="steps">
+  <div class="steps-inner">
+    <h2 class="section-title">¿Cómo Solicitar Tu Cita?</h2>
+    <p class="section-sub">En solo 4 pasos tienes tu cita asegurada.</p>
+    <div class="steps-grid">
+      <div class="step"><div class="step-num">1</div><div class="step-title">Regístrate</div><div class="step-desc">Crea tu cuenta con tu DNI y datos personales en menos de 1 minuto.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-title">Elige Especialidad</div><div class="step-desc">Selecciona la especialidad médica que necesitas consultar.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-title">Selecciona Fecha</div><div class="step-desc">Elige el médico, fecha y hora disponible que mejor te convenga.</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-title">¡Listo!</div><div class="step-desc">Tu cita queda registrada. Recibirás la confirmación en tu panel.</div></div>
+    </div>
+    <div style="text-align:center;margin-top:36px;">
+      <a href="{{ url_for('solicitar_cita') if current_user.is_authenticated else url_for('registro') }}" class="btn-primary" style="font-size:1rem;padding:14px 36px;">
+        <i class="fas fa-calendar-plus"></i> Solicitar Cita Ahora
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- URGENCIAS -->
+<section class="urgencias" id="contacto">
+  <div class="urgencias-inner">
+    <div style="font-size:3rem;margin-bottom:10px;">🚨</div>
+    <h2>¿Es una Emergencia?</h2>
+    <p>Nuestra sala de urgencias está disponible las 24 horas, los 7 días de la semana.</p>
+    <div class="urgencias-num">0400 443 24/7</div>
+    <p style="font-size:.85rem;color:#fca5a5;">Emergencias: (01) 915 515 3316 &nbsp;|&nbsp; Central: (01) 328-5742</p>
+  </div>
+</section>
+
+{% endblock %}
