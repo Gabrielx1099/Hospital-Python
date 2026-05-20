@@ -48,18 +48,15 @@
 </section>
 
  <!-- ================================================ ESPECIALIDADES ================================================ -->
+<!-- ================================================ ESPECIALIDADES ================================================ -->
 <section class="esp-section" id="especialidades">
 
   <div class="sec-head">
     <div class="sec-line"></div>
 
-    <span class="sec-label">
-      Nuestras áreas
-    </span>
+    <span class="sec-label">Nuestras áreas</span>
 
-    <h2 class="sec-title">
-      Especialidades destacadas
-    </h2>
+    <h2 class="sec-title">Especialidades destacadas</h2>
 
     <p class="sec-sub">
       Contamos con un equipo multidisciplinario para cuidar tu salud en todas las etapas de la vida.
@@ -68,27 +65,24 @@
 
   <div class="esp-grid">
 
-    <!-- CARD -->
+    {% for esp in especialidades %}
+
     <div class="esp-card">
 
       <div class="esp-card-img">
-  <img src="{{ url_for('static', filename='img/cardiologia.jpg') }}" alt="Cardiología">
-
-  <div class="esp-icon-badge">
-    <i class="fas fa-heartbeat"></i>
-  </div>
-</div>
+        <img src="{{ url_for('static', filename='img/' ~ esp.nombre|lower|replace(' ', '_') ~ '.jpg') }}" alt="{{ esp.nombre }}">
+      </div>
 
       <div class="esp-card-body">
         <div class="esp-name">
-          Cardiología
+          {{ esp.nombre }}
         </div>
 
         <div class="esp-desc">
-          Diagnóstico y tratamiento especializado para enfermedades del corazón y sistema cardiovascular.
+          {{ esp.descripcion }}
         </div>
 
-        <a href="{{ url_for('login') }}" class="esp-link">
+        <a href="{{ url_for('solicitar_cita') if current_user.is_authenticated else url_for('login') }}" class="esp-link">
           Reservar cita
           <i class="fas fa-arrow-right"></i>
         </a>
@@ -96,89 +90,7 @@
 
     </div>
 
-    <!-- CARD -->
-    <div class="esp-card">
-
-      <div class="esp-card-img">
-        <img src="{{ url_for('static', filename='img/pediatria.jpg') }}" alt="Pediatría">
-
-        <div class="esp-icon-badge">
-          <i class="fas fa-baby"></i>
-        </div>
-      </div>
-
-      <div class="esp-card-body">
-        <div class="esp-name">
-          Pediatría
-        </div>
-
-        <div class="esp-desc">
-          Atención médica integral para niños y adolescentes con enfoque preventivo y especializado.
-        </div>
-
-        <a href="{{ url_for('login') }}" class="esp-link">
-          Reservar cita
-          <i class="fas fa-arrow-right"></i>
-        </a>
-      </div>
-
-    </div>
-
-    <!-- CARD -->
-    <div class="esp-card">
-
-      <div class="esp-card-img">
-        <img src="{{ url_for('static', filename='img/neurologia.jpg') }}" alt="Neurología">
-
-        <div class="esp-icon-badge">
-          <i class="fas fa-brain"></i>
-        </div>
-      </div>
-
-      <div class="esp-card-body">
-        <div class="esp-name">
-          Neurología
-        </div>
-
-        <div class="esp-desc">
-          Evaluación y tratamiento de enfermedades del sistema nervioso central y periférico.
-        </div>
-
-        <a href="{{ url_for('login') }}" class="esp-link">
-          Reservar cita
-          <i class="fas fa-arrow-right"></i>
-        </a>
-      </div>
-
-    </div>
-
-    <!-- CARD -->
-    <div class="esp-card">
-
-      <div class="esp-card-img">
-        <img src="{{ url_for('static', filename='img/ginecologia.jpg') }}" alt="Ginecología">
-
-        <div class="esp-icon-badge">
-          <i class="fas fa-user-doctor"></i>
-        </div>
-      </div>
-
-      <div class="esp-card-body">
-        <div class="esp-name">
-          Ginecología
-        </div>
-
-        <div class="esp-desc">
-          Servicios médicos especializados en salud femenina y control integral de la mujer.
-        </div>
-
-        <a href="{{ url_for('login') }}" class="esp-link">
-          Reservar cita
-          <i class="fas fa-arrow-right"></i>
-        </a>
-      </div>
-
-    </div>
+    {% endfor %}
 
   </div>
 

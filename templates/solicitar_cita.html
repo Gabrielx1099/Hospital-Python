@@ -24,7 +24,7 @@
           <select name="especialidad_id" id="sel-esp" class="form-control" required onchange="cargarMedicos()">
             <option value="">— Selecciona una especialidad —</option>
             {% for esp in especialidades %}
-            <option value="{{ esp.id }}">{{ esp.icono }} {{ esp.nombre }}</option>
+            <option value="{{ esp.id }}"> {{ esp.nombre }}</option>
             {% endfor %}
           </select>
         </div>

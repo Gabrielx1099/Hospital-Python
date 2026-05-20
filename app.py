@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'hospital_lanfranco_secret_2024'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/hospital_lanfranco'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:25Defebrero%3F@localhost:3306/hospital_lanfranco'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -78,32 +78,61 @@ def load_user(user_id):
 
 def inicializar_db():
     db.create_all()
+
     if not Especialidad.query.first():
+
         esp_list = [
-            ('Cardiologia','Diagnostico y tratamiento de enfermedades del corazon.','❤️'),
-            ('Pediatria','Atencion medica integral para ninos y adolescentes.','👶'),
-            ('Ginecologia','Salud reproductiva y atencion a la mujer.','🌸'),
-            ('Traumatologia','Tratamiento de lesiones oseas y musculares.','🦴'),
-            ('Medicina General','Atencion primaria y consulta general.','🩺'),
-            ('Oftalmologia','Diagnostico y tratamiento de enfermedades oculares.','👁️'),
-            ('Neurologia','Enfermedades del sistema nervioso.','🧠'),
-            ('Dermatologia','Diagnostico y tratamiento de enfermedades de la piel.','🧬'),
+            ('Cardiologia', 'Diagnostico y tratamiento de enfermedades del corazon.'),
+            ('Pediatria', 'Atencion medica integral para ninos y adolescentes.'),
+            ('Ginecologia', 'Salud reproductiva y atencion a la mujer.'),
+            ('Traumatologia', 'Tratamiento de lesiones oseas y musculares.'),
+            ('Medicina General', 'Atencion primaria y consulta general.'),
+            ('Oftalmologia', 'Diagnostico y tratamiento de enfermedades oculares.'),
+            ('Neurologia', 'Enfermedades del sistema nervioso.'),
+            ('Dermatologia', 'Diagnostico y tratamiento de enfermedades de la piel.')
         ]
-        for n,d,i in esp_list:
-            db.session.add(Especialidad(nombre=n,descripcion=d,icono=i))
+
+        for n, d in esp_list:
+            db.session.add(
+                Especialidad(
+                    nombre=n,
+                    descripcion=d
+                )
+            )
+
         db.session.commit()
+
         medicos_data = [
-            ('Carlos','Mendoza Ruiz','CM-12345',1),
-            ('Ana','Garcia Lopez','CM-23456',2),
-            ('Rosa','Torres Vega','CM-34567',3),
-            ('Luis','Ramos Flores','CM-45678',4),
-            ('Jorge','Castillo Pena','CM-56789',5),
+            ('Carlos', 'Mendoza Ruiz', 'CM-12345', 1),
+            ('Ana', 'Garcia Lopez', 'CM-23456', 2),
+            ('Rosa', 'Torres Vega', 'CM-34567', 3),
+            ('Luis', 'Ramos Flores', 'CM-45678', 4),
+            ('Jorge', 'Castillo Pena', 'CM-56789', 5),
         ]
-        for n,a,c,e in medicos_data:
-            db.session.add(Medico(nombre=n,apellido=a,cmp=c,especialidad_id=e))
-        db.session.add(Usuario(nombre='Admin',apellido='Hospital',dni='00000000',
-            email='admin@lanfranco.pe',password=generate_password_hash('admin123'),rol='admin'))
+
+        for n, a, c, e in medicos_data:
+            db.session.add(
+                Medico(
+                    nombre=n,
+                    apellido=a,
+                    cmp=c,
+                    especialidad_id=e
+                )
+            )
+
+        db.session.add(
+            Usuario(
+                nombre='Admin',
+                apellido='Hospital',
+                dni='00000000',
+                email='admin@lanfranco.pe',
+                password=generate_password_hash('admin123'),
+                rol='admin'
+            )
+        )
+
         db.session.commit()
+
         print("DB inicializada OK")
 
 @app.route('/')
