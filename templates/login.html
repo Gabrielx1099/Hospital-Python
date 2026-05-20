@@ -1,36 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}Iniciar Sesión — Hospital Lanfranco La Hoz{% endblock %}
 {% block extra_css %}
-<style>
-.auth-wrap{min-height:calc(100vh - 200px);display:flex;align-items:center;justify-content:center;padding:40px 16px;
-  background:linear-gradient(135deg,#dbeafe 0%,#f0f9ff 50%,#dcfce7 100%);}
-.auth-card{background:white;border-radius:20px;box-shadow:0 8px 40px rgba(26,75,140,.15);width:100%;max-width:460px;overflow:hidden;}
-.auth-header{background:linear-gradient(135deg,var(--azul),var(--azul-medio));padding:32px 36px 24px;color:white;text-align:center;}
-.auth-header .logo{font-size:2.5rem;margin-bottom:8px;}
-.auth-header h2{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.4rem;}
-.auth-header p{font-size:.85rem;color:#93c5fd;margin-top:4px;}
-.auth-body{padding:32px 36px;}
-.form-group{margin-bottom:18px;}
-.form-group label{display:block;font-weight:600;font-size:.85rem;color:var(--texto);margin-bottom:6px;}
-.form-group label span{color:#ef4444;}
-.form-control{width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;font-family:'Open Sans',sans-serif;transition:.2s;outline:none;}
-.form-control:focus{border-color:var(--azul-medio);box-shadow:0 0 0 3px rgba(37,99,176,.1);}
-.input-icon{position:relative;}
-.input-icon i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.9rem;}
-.input-icon .form-control{padding-left:38px;}
-.btn-full{width:100%;padding:13px;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;background:linear-gradient(135deg,var(--azul-medio),var(--azul));color:white;transition:.2s;margin-top:8px;}
-.btn-full:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(26,75,140,.35);}
-.auth-footer{text-align:center;margin-top:20px;font-size:.88rem;color:#64748b;}
-.auth-footer a{color:var(--azul-medio);font-weight:700;}
-.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:#94a3b8;font-size:.82rem;}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e2e8f0;}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/Stylelogin.css') }}">
 {% endblock %}
 {% block content %}
 <div class="auth-wrap">
   <div class="auth-card">
     <div class="auth-header">
-      <div class="logo">🏥</div>
+      <div class="logo">
+  <img src="{{ url_for('static', filename='img/logoHospital.png') }}" alt="Logo Hospital" style="width:60px; height:60px; object-fit:contain;">
+</div>
       <h2>Iniciar Sesión</h2>
       <p>Accede a tu panel de citas médicas</p>
     </div>

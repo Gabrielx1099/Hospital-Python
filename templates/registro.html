@@ -1,89 +1,93 @@
 {% extends 'base.html' %}
 {% block title %}Registro — Hospital Lanfranco La Hoz{% endblock %}
 {% block extra_css %}
-<style>
-.auth-wrap{min-height:calc(100vh - 200px);display:flex;align-items:center;justify-content:center;padding:40px 16px;
-  background:linear-gradient(135deg,#dbeafe 0%,#f0f9ff 50%,#dcfce7 100%);}
-.auth-card{background:white;border-radius:20px;box-shadow:0 8px 40px rgba(26,75,140,.15);width:100%;max-width:560px;overflow:hidden;}
-.auth-header{background:linear-gradient(135deg,var(--verde),#15803d);padding:28px 36px 20px;color:white;text-align:center;}
-.auth-header h2{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.4rem;}
-.auth-header p{font-size:.85rem;color:#bbf7d0;margin-top:4px;}
-.auth-body{padding:28px 36px;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.form-group{margin-bottom:15px;}
-.form-group label{display:block;font-weight:600;font-size:.83rem;color:var(--texto);margin-bottom:5px;}
-.form-group label span{color:#ef4444;}
-.form-control{width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:'Open Sans',sans-serif;transition:.2s;outline:none;}
-.form-control:focus{border-color:var(--verde);box-shadow:0 0 0 3px rgba(22,163,74,.1);}
-.input-icon{position:relative;}
-.input-icon i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.85rem;}
-.input-icon .form-control{padding-left:36px;}
-.btn-full{width:100%;padding:13px;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;background:linear-gradient(135deg,#22c55e,#15803d);color:white;transition:.2s;margin-top:4px;}
-.btn-full:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(22,163,74,.4);}
-.auth-footer{text-align:center;margin-top:16px;font-size:.88rem;color:#64748b;}
-.auth-footer a{color:var(--azul-medio);font-weight:700;}
-.section-label{font-family:'Montserrat',sans-serif;font-weight:700;font-size:.78rem;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:18px 0 12px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='CSS/Styleregistro.css') }}">
 {% endblock %}
 {% block content %}
 <div class="auth-wrap">
   <div class="auth-card">
+
     <div class="auth-header">
-      <div style="font-size:2.2rem;margin-bottom:6px;">👤</div>
+     <div class="logo">
+  <img src="{{ url_for('static', filename='img/logoHospital.png') }}" alt="Logo Hospital" style="width:60px; height:60px; object-fit:contain;">
+</div>
       <h2>Crear Cuenta</h2>
       <p>Regístrate para solicitar tus citas en línea</p>
     </div>
+
+    <!-- STEPPER -->
+    <div class="stepper">
+      <div class="step active" id="step-indicator-1">
+        <div class="step-circle">1</div>
+        <div class="step-label">Datos Personales</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-indicator-2">
+        <div class="step-circle">2</div>
+        <div class="step-label">Datos de Acceso</div>
+      </div>
+    </div>
+
     <div class="auth-body">
-      <form method="POST">
-        <div class="section-label"><i class="fas fa-user"></i> &nbsp;Datos Personales</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Nombre(s) <span>*</span></label>
-            <div class="input-icon"><i class="fas fa-user"></i>
-              <input type="text" name="nombre" class="form-control" placeholder="Tu nombre" required/>
+      <form method="POST" id="registro-form">
+
+        <!-- PASO 1 -->
+        <div class="step-panel active" id="panel-1">
+          <div class="section-label"><i class="fas fa-user"></i> &nbsp;Datos Personales</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre(s) <span>*</span></label>
+              <div class="input-icon"><i class="fas fa-user"></i>
+                <input type="text" name="nombre" class="form-control" placeholder="Tu nombre" required/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Apellidos <span>*</span></label>
+              <div class="input-icon"><i class="fas fa-user"></i>
+                <input type="text" name="apellido" class="form-control" placeholder="Tus apellidos" required/>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>DNI <span>*</span></label>
+              <div class="input-icon"><i class="fas fa-id-card"></i>
+                <input type="text" name="dni" class="form-control" maxlength="8" placeholder="12345678" required/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Fecha de Nacimiento</label>
+              <input type="date" name="fecha_nac" class="form-control"/>
             </div>
           </div>
           <div class="form-group">
-            <label>Apellidos <span>*</span></label>
-            <div class="input-icon"><i class="fas fa-user"></i>
-              <input type="text" name="apellido" class="form-control" placeholder="Tus apellidos" required/>
+            <label>Teléfono / Celular</label>
+            <div class="input-icon"><i class="fas fa-phone"></i>
+              <input type="tel" name="telefono" class="form-control" placeholder="987654321"/>
             </div>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>DNI <span>*</span></label>
-            <div class="input-icon"><i class="fas fa-id-card"></i>
-              <input type="text" name="dni" class="form-control" maxlength="8" placeholder="12345678" required/>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Fecha de Nacimiento</label>
-            <input type="date" name="fecha_nac" class="form-control"/>
-          </div>
+          <button type="button" class="btn-full" id="btn-next">
+            Siguiente &nbsp;<i class="fas fa-arrow-right"></i>
+          </button>
         </div>
 
-        <div class="section-label"><i class="fas fa-envelope"></i> &nbsp;Contacto</div>
-        <div class="form-group">
-          <label>Correo Electrónico <span>*</span></label>
-          <div class="input-icon"><i class="fas fa-envelope"></i>
-            <input type="email" name="email" class="form-control" placeholder="tucorreo@email.com" required/>
+        <!-- PASO 2 -->
+        <div class="step-panel" id="panel-2">
+          <div class="section-label"><i class="fas fa-envelope"></i> &nbsp;Datos de Acceso</div>
+          <div class="form-group">
+            <label>Correo Electrónico <span>*</span></label>
+            <div class="input-icon"><i class="fas fa-envelope"></i>
+              <input type="email" name="email" class="form-control" placeholder="tucorreo@email.com" required/>
+            </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label>Teléfono / Celular</label>
-          <div class="input-icon"><i class="fas fa-phone"></i>
-            <input type="tel" name="telefono" class="form-control" placeholder="987654321"/>
-          </div>
-        </div>
-
-        <div class="section-label"><i class="fas fa-lock"></i> &nbsp;Contraseña</div>
-        <div class="form-row">
+          <div class="section-label" style="margin-top:8px;"><i class="fas fa-lock"></i> &nbsp;Contraseña</div>
           <div class="form-group">
             <label>Contraseña <span>*</span></label>
             <div class="input-icon"><i class="fas fa-lock"></i>
-              <input type="password" name="password" class="form-control" placeholder="Mín. 6 caracteres" required/>
+              <input type="password" name="password" id="password-input" class="form-control" placeholder="Mín. 6 caracteres" required/>
             </div>
+            <div class="password-bar"><div class="password-fill" id="pw-fill"></div></div>
+            <div class="password-hint" id="pw-hint"></div>
           </div>
           <div class="form-group">
             <label>Confirmar Contraseña <span>*</span></label>
@@ -91,9 +95,24 @@
               <input type="password" name="confirm_password" class="form-control" placeholder="Repite la contraseña" required/>
             </div>
           </div>
+          <div class="check-group">
+            <label class="check-label">
+              <input type="checkbox" required/> Acepto Términos y Condiciones
+            </label>
+            <label class="check-label">
+              <input type="checkbox" required/> Acepto Políticas de Privacidad
+            </label>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn-back" id="btn-back">
+              <i class="fas fa-arrow-left"></i> &nbsp;Atrás
+            </button>
+            <button type="submit" class="btn-full btn-submit">
+              <i class="fas fa-user-plus"></i> &nbsp;Crear Cuenta
+            </button>
+          </div>
         </div>
 
-        <button type="submit" class="btn-full"><i class="fas fa-user-plus"></i> &nbsp;Crear Mi Cuenta</button>
       </form>
       <div class="auth-footer" style="margin-top:18px;">
         ¿Ya tienes cuenta? <a href="{{ url_for('login') }}">Iniciar Sesión</a>
@@ -102,4 +121,54 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const btnNext = document.getElementById('btn-next');
+  const btnBack = document.getElementById('btn-back');
+  const panel1  = document.getElementById('panel-1');
+  const panel2  = document.getElementById('panel-2');
+  const ind1    = document.getElementById('step-indicator-1');
+  const ind2    = document.getElementById('step-indicator-2');
+
+  btnNext.addEventListener('click', () => {
+    // Validar campos del paso 1
+    const inputs = panel1.querySelectorAll('input[required]');
+    let ok = true;
+    inputs.forEach(i => { if (!i.value.trim()) { i.classList.add('error-input'); ok = false; } else i.classList.remove('error-input'); });
+    if (!ok) return;
+    panel1.classList.remove('active');
+    panel2.classList.add('active');
+    ind1.classList.remove('active'); ind1.classList.add('done');
+    ind2.classList.add('active');
+  });
+
+  btnBack.addEventListener('click', () => {
+    panel2.classList.remove('active');
+    panel1.classList.add('active');
+    ind2.classList.remove('active');
+    ind1.classList.remove('done'); ind1.classList.add('active');
+  });
+
+  // Indicador de fuerza de contraseña
+  const pwInput = document.getElementById('password-input');
+  const pwFill  = document.getElementById('pw-fill');
+  const pwHint  = document.getElementById('pw-hint');
+  pwInput.addEventListener('input', () => {
+    const v = pwInput.value;
+    let strength = 0;
+    if (v.length >= 6) strength++;
+    if (v.length >= 10) strength++;
+    if (/[A-Z]/.test(v)) strength++;
+    if (/[0-9]/.test(v)) strength++;
+    if (/[^A-Za-z0-9]/.test(v)) strength++;
+    const pct = (strength / 5) * 100;
+    pwFill.style.width = pct + '%';
+    const colors = ['#ef4444','#f59e0b','#f59e0b','#22c55e','#16a34a'];
+    const labels = ['Muy débil','Débil','Regular','Fuerte','Muy fuerte'];
+    pwFill.style.background = colors[strength - 1] || '#e2e8f0';
+    pwHint.textContent = v.length ? labels[strength - 1] || '' : '';
+  });
+</script>
 {% endblock %}
