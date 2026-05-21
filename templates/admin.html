@@ -11,6 +11,7 @@
   <div class="admin-title">⚙️ Panel de Administración</div>
   <div class="admin-sub">Gestión de citas y usuarios — Hospital Carlos Lanfranco La Hoz</div>
 
+  <!-- Stats -->
   <div class="stats-grid">
     <div class="stat-card azul"><div class="stat-icon">👥</div><div><div class="stat-num">{{ total_usuarios }}</div><div class="stat-label">Usuarios Registrados</div></div></div>
     <div class="stat-card verde"><div class="stat-icon">📋</div><div><div class="stat-num">{{ total_citas }}</div><div class="stat-label">Total de Citas</div></div></div>
@@ -18,49 +19,176 @@
     <div class="stat-card rojo"><div class="stat-icon">⏳</div><div><div class="stat-num">{{ citas_pendientes }}</div><div class="stat-label">Pendientes de Confirmar</div></div></div>
   </div>
 
+  <!-- Main card con tabs -->
   <div class="table-card">
-    <div class="table-header">
-      <div class="table-title"><i class="fas fa-list"></i> &nbsp;Citas Recientes</div>
+    <div class="section-tabs">
+      <button class="stab active" onclick="switchTab('citas', this)">📋 Citas recientes</button>
+      <button class="stab" onclick="switchTab('pacientes', this)">🧑 Pacientes</button>
+      <button class="stab" onclick="switchTab('medicos', this)">👨‍⚕️ Médicos</button>
     </div>
-    <div style="overflow-x:auto;">
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Paciente</th><th>DNI</th><th>Especialidad</th><th>Médico</th><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Estado</th><th>Acción</th></tr>
-        </thead>
-        <tbody>
-          {% for c in citas_recientes %}
-          <tr>
-            <td style="color:#94a3b8;">#{{ c.id }}</td>
-            <td><strong>{{ c.paciente.nombre }} {{ c.paciente.apellido }}</strong></td>
-            <td>{{ c.paciente.dni }}</td>
-            <td>{{ c.especialidad.nombre }}</td>
-            <td>Dr. {{ c.medico.nombre }} {{ c.medico.apellido }}</td>
-            <td>{{ c.fecha.strftime('%d/%m/%Y') }}</td>
-            <td>{{ c.hora }}</td>
-            <td><span style="font-size:.78rem;">{% if c.tipo=='voz' %}🎤{% else %}⌨️{% endif %} {{ c.tipo }}</span></td>
-            <td><span class="badge {{ c.estado }}">{{ c.estado }}</span></td>
-            <td>
-              {% if c.estado == 'pendiente' %}
-              <button class="btn-sm btn-confirm" onclick="confirmar({{ c.id }}, this)">✅ Confirmar</button>
-              {% else %}—{% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+    <!-- ─── TAB CITAS ─── -->
+    <div id="pane-citas" class="tab-pane active">
+      <div class="table-header">
+        <div class="table-title"><i class="fas fa-list"></i> &nbsp;Citas Recientes</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Paciente</th><th>DNI</th><th>Especialidad</th><th>Médico</th><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Estado</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            {% for c in citas_recientes %}
+            <tr>
+              <td style="color:#94a3b8;">#{{ c.id }}</td>
+              <td><strong>{{ c.paciente.nombre }} {{ c.paciente.apellido }}</strong></td>
+              <td>{{ c.paciente.dni }}</td>
+              <td>{{ c.especialidad.nombre }}</td>
+              <td>Dr. {{ c.medico.nombre }} {{ c.medico.apellido }}</td>
+              <td>{{ c.fecha.strftime('%d/%m/%Y') }}</td>
+              <td>{{ c.hora }}</td>
+              <td><span style="font-size:.78rem;">{% if c.tipo=='voz' %}🎤{% else %}⌨️{% endif %} {{ c.tipo }}</span></td>
+              <td><span class="badge {{ c.estado }}">{{ c.estado }}</span></td>
+              <td>
+                {% if c.estado == 'pendiente' %}
+                <button class="btn-sm btn-confirm" onclick="confirmar({{ c.id }}, this)">✅ Confirmar</button>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+
+    <!-- ─── TAB PACIENTES ─── -->
+    <div id="pane-pacientes" class="tab-pane">
+      <input class="search-bar" type="text" placeholder="🔍  Buscar por nombre, DNI o correo…"
+             oninput="filtrarTabla('tbl-pac', this.value, 'cnt-pac')">
+      <p class="row-count" id="cnt-pac">{{ pacientes|length }} paciente(s)</p>
+      <div style="overflow-x:auto;">
+        <table id="tbl-pac">
+          <thead>
+            <tr><th>Paciente</th><th>DNI</th><th>Correo</th><th>Teléfono</th><th>Fecha nac.</th><th>Registrado</th><th>Citas</th></tr>
+          </thead>
+          <tbody>
+            {% for p in pacientes %}
+            <tr>
+              <td>
+                <div class="name-cell">
+                  <div class="av av-p">{{ p.nombre[0] }}{{ p.apellido[0] }}</div>
+                  <span class="nm">{{ p.nombre }} {{ p.apellido }}</span>
+                </div>
+              </td>
+              <td style="font-family:monospace;">{{ p.dni }}</td>
+              <td style="color:#64748b;">{{ p.email }}</td>
+              <td>{{ p.telefono or '—' }}</td>
+              <td>{{ p.fecha_nac.strftime('%d/%m/%Y') if p.fecha_nac else '—' }}</td>
+              <td style="color:#94a3b8; font-size:12.5px;">{{ p.creado_en.strftime('%d/%m/%Y') }}</td>
+              <td><strong>{{ p.citas|length }}</strong></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:#94a3b8;">No hay pacientes registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── TAB MÉDICOS ─── -->
+    <div id="pane-medicos" class="tab-pane">
+      <input class="search-bar" type="text" placeholder="🔍  Buscar por nombre, CMP o especialidad…"
+             oninput="filtrarTabla('tbl-med', this.value, 'cnt-med')">
+      <p class="row-count" id="cnt-med">{{ medicos|length }} médico(s)</p>
+      <div style="overflow-x:auto;">
+        <table id="tbl-med">
+          <thead>
+            <tr><th>Médico</th><th>CMP</th><th>Especialidad</th><th>Estado</th><th>Total citas</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            {% for m in medicos %}
+            <tr id="row-{{ m.id }}">
+              <td>
+                <div class="name-cell">
+                  <div class="av av-m">{{ m.nombre[0] }}{{ m.apellido[0] }}</div>
+                  <span class="nm">Dr. {{ m.nombre }} {{ m.apellido }}</span>
+                </div>
+              </td>
+              <td style="font-family:monospace; font-size:12.5px;">{{ m.cmp or '—' }}</td>
+              <td><span class="badge besp">{{ m.especialidad.nombre if m.especialidad else '—' }}</span></td>
+              <td>
+                <span class="badge {{ 'bdis' if m.disponible else 'bnodis' }}" id="badge-{{ m.id }}">
+                  {{ 'Disponible' if m.disponible else 'No disponible' }}
+                </span>
+              </td>
+              <td><strong>{{ m.citas|length }}</strong></td>
+              <td>
+                <button class="tbtn {{ 'tbtn-off' if m.disponible else 'tbtn-on' }}"
+                        id="tbtn-{{ m.id }}"
+                        onclick="toggleMedico({{ m.id }}, this)">
+                  {{ 'Desactivar' if m.disponible else 'Activar' }}
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /table-card -->
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
+/* ── Tabs ── */
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── Búsqueda live ── */
+function filtrarTabla(tableId, q, countId) {
+  const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+  const term = q.toLowerCase();
+  let visible = 0;
+  rows.forEach(r => {
+    const match = r.textContent.toLowerCase().includes(term);
+    r.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById(countId).textContent = visible + ' resultado(s)';
+}
+
+/* ── Confirmar cita ── */
 async function confirmar(id, btn) {
-  const r = await fetch(`/admin/confirmar/${id}`, {method:'POST'});
+  const r = await fetch(`/admin/confirmar/${id}`, { method: 'POST' });
   if ((await r.json()).ok) {
-    btn.closest('tr').querySelector('.badge').className='badge confirmada';
-    btn.closest('tr').querySelector('.badge').textContent='confirmada';
+    const badge = btn.closest('tr').querySelector('.badge');
+    badge.className = 'badge confirmada';
+    badge.textContent = 'confirmada';
     btn.remove();
+  }
+}
+
+/* ── Toggle disponibilidad médico ── */
+async function toggleMedico(id, btn) {
+  const r = await fetch(`/admin/toggle-medico/${id}`, { method: 'POST' });
+  const data = await r.json();
+  if (data.ok) {
+    const badge = document.getElementById('badge-' + id);
+    if (data.disponible) {
+      badge.className = 'badge bdis'; badge.textContent = 'Disponible';
+      btn.className = 'tbtn tbtn-off'; btn.textContent = 'Desactivar';
+    } else {
+      badge.className = 'badge bnodis'; badge.textContent = 'No disponible';
+      btn.className = 'tbtn tbtn-on'; btn.textContent = 'Activar';
+    }
   }
 }
 </script>
 {% endblock %}
+

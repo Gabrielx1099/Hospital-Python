@@ -254,21 +254,36 @@ def api_horarios(medico_id,fecha):
 @app.route('/admin')
 @login_required
 def admin():
-    if current_user.rol!='admin':
-        flash('Acceso restringido.','error'); return redirect(url_for('dashboard'))
+    if current_user.rol != 'admin':
+        flash('Acceso restringido.', 'error')
+        return redirect(url_for('dashboard'))
     return render_template('admin.html',
         total_usuarios=Usuario.query.count(),
         total_citas=Cita.query.count(),
         citas_hoy=Cita.query.filter_by(fecha=date.today()).count(),
         citas_pendientes=Cita.query.filter_by(estado='pendiente').count(),
-        citas_recientes=Cita.query.order_by(Cita.creado_en.desc()).limit(15).all())
-
+        citas_recientes=Cita.query.order_by(Cita.creado_en.desc()).limit(15).all(),
+        pacientes=Usuario.query.filter_by(rol='paciente').order_by(Usuario.creado_en.desc()).all(),
+        medicos=Medico.query.order_by(Medico.apellido).all()
+    )
+    
 @app.route('/admin/confirmar/<int:cita_id>', methods=['POST'])
 @login_required
 def confirmar_cita(cita_id):
     if current_user.rol!='admin': return jsonify({'error':'No autorizado'}),403
     c=Cita.query.get_or_404(cita_id); c.estado='confirmada'; db.session.commit()
     return jsonify({'ok':True})
+
+@app.route('/admin/toggle-medico/<int:medico_id>', methods=['POST'])
+@login_required
+def toggle_medico(medico_id):
+    if current_user.rol != 'admin':
+        return jsonify({'error': 'No autorizado'}), 403
+    m = Medico.query.get_or_404(medico_id)
+    m.disponible = not m.disponible
+    db.session.commit()
+    return jsonify({'ok': True, 'disponible': m.disponible})
+    
 
 if __name__=='__main__':
     with app.app_context():
