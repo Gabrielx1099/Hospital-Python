@@ -12,6 +12,7 @@
 
   <div class="tabs">
     <div class="tab active" onclick="switchTab('manual')"><i class="fas fa-keyboard"></i> Solicitud Manual</div>
+    <div class="tab" onclick="switchTab('voz')"><i class="fas fa-microphone"></i> Asistente de Voz</div>
   </div>
 
   <!-- ══════ PANEL MANUAL ══════ -->
@@ -59,7 +60,55 @@
     </div>
   </div>
 
-  
+  <!-- ══════ PANEL VOZ IA ══════ -->
+  <div class="panel" id="panel-voz">
+    <div class="voz-card">
+      <div class="voz-title"><i class="fas fa-robot"></i> Asistente de Voz</div>
+      <p class="voz-desc">El asistente te guiará paso a paso: especialidad, médico, fecha, hora y motivo. Al final confirmará tu cita automáticamente.</p>
+
+      <div class="voz-steps">
+        <div class="voz-step" id="step-esp"><div class="num">1</div>Especialidad</div>
+        <div class="voz-step" id="step-med"><div class="num">2</div>Médico</div>
+        <div class="voz-step" id="step-fecha"><div class="num">3</div>Fecha</div>
+        <div class="voz-step" id="step-hora"><div class="num">4</div>Hora</div>
+        <div class="voz-step" id="step-motivo"><div class="num">5</div>Motivo</div>
+        <div class="voz-step" id="step-confirm"><div class="num">6</div>Confirmar</div>
+      </div>
+
+      <div class="voz-compat-notice">
+        <i class="fas fa-info-circle"></i>
+        <span>Requiere <strong>Google Chrome</strong>, conexión a internet y permiso de micrófono.</span>
+        <span class="voz-compat-brave">Si usas <strong>Brave</strong>, desactiva Shields en este sitio.</span>
+      </div>
+
+      <div class="voz-resumen" id="voz-resumen">
+        <div class="voz-resumen-title"><i class="fas fa-clipboard-list"></i> Datos de tu cita</div>
+        <div class="voz-resumen-grid">
+          <div class="voz-campo" id="campo-esp"><span>Especialidad</span><strong>—</strong></div>
+          <div class="voz-campo" id="campo-med"><span>Médico</span><strong>—</strong></div>
+          <div class="voz-campo" id="campo-fecha"><span>Fecha</span><strong>—</strong></div>
+          <div class="voz-campo" id="campo-hora"><span>Hora</span><strong>—</strong></div>
+          <div class="voz-campo" id="campo-motivo"><span>Motivo</span><strong>—</strong></div>
+        </div>
+      </div>
+
+      <div class="chat-box" id="chatBox">
+        <div class="msg ia">Hola, soy el asistente del Hospital Lanfranco La Hoz. Te guiaré paso a paso para agendar tu cita. ¿Qué especialidad necesitas?</div>
+      </div>
+
+      <div class="voz-transcript" id="transcript">Presiona el micrófono y habla...</div>
+      <div class="voz-status" id="voz-status">Presiona el micrófono para empezar</div>
+
+      <button type="button" class="mic-btn" id="micBtn" onclick="toggleVoz()" title="Activar micrófono">
+        <i class="fas fa-microphone" id="micIcon"></i>
+      </button>
+
+      <button type="button" class="btn-nav-outline" onclick="resetChat()" style="margin-top:8px;color:#93c5fd;border-color:#93c5fd;">
+        <i class="fas fa-redo"></i> Reiniciar conversación
+      </button>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
@@ -69,9 +118,14 @@ const today = new Date().toISOString().split('T')[0];
 document.getElementById('inp-fecha').min = today;
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', (tab==='manual'&&i===0)||(tab==='voz'&&i===1)));
-  document.getElementById('panel-manual').classList.toggle('active', tab==='manual');
-  document.getElementById('panel-voz').classList.toggle('active', tab==='voz');
+  if (tab !== 'voz') {
+    detenerAsistenteVoz();
+  }
+  document.querySelectorAll('.tab').forEach((t, i) =>
+    t.classList.toggle('active', (tab === 'manual' && i === 0) || (tab === 'voz' && i === 1))
+  );
+  document.getElementById('panel-manual').classList.toggle('active', tab === 'manual');
+  document.getElementById('panel-voz').classList.toggle('active', tab === 'voz');
 }
 
 async function cargarMedicos() {
@@ -81,127 +135,657 @@ async function cargarMedicos() {
   if (!espId) { sel.innerHTML = '<option>— Selecciona especialidad primero —</option>'; return; }
   const r = await fetch(`/api/medicos/${espId}`);
   const data = await r.json();
-  sel.innerHTML = '<option value="">— Selecciona un médico —</option>' + data.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
+  sel.innerHTML = '<option value="">— Selecciona un médico —</option>' + data.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
   document.getElementById('horarios-wrap').innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Selecciona fecha para ver horarios.</p>';
 }
 
 async function cargarHorarios() {
   const medId = document.getElementById('sel-med').value;
   const fecha = document.getElementById('inp-fecha').value;
-  const wrap  = document.getElementById('horarios-wrap');
+  const wrap = document.getElementById('horarios-wrap');
   if (!medId || !fecha) return;
   wrap.innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Cargando horarios...</p>';
   const r = await fetch(`/api/horarios/${medId}/${fecha}`);
   const horas = await r.json();
   if (!horas.length) { wrap.innerHTML = '<p style="color:#ef4444;font-size:.85rem;">No hay horarios disponibles para esta fecha.</p>'; return; }
-  wrap.innerHTML = '<div class="horarios-grid">' + horas.map(h=>`<div class="horario-btn" onclick="selHora(this,'${h}')">${h}</div>`).join('') + '</div>';
+  wrap.innerHTML = '<div class="horarios-grid">' + horas.map(h => `<div class="horario-btn" onclick="selHora(this,'${h}')">${h}</div>`).join('') + '</div>';
 }
 
 function selHora(el, hora) {
-  document.querySelectorAll('.horario-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('inp-hora').value = hora;
 }
 
-// ── VOZ IA ──────────────────────────────────────────────────────────────────
-let recognition, listening = false, chatHistory = [];
+// ── VOZ IA — flujo conversacional completo ───────────────────────────────────
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const ESPECIALIDADES_NOMBRE = {
+  {% for esp in especialidades %}
+  {{ esp.id }}: {{ esp.nombre|tojson }},
+  {% endfor %}
+};
 
-function initSpeech() {
-  if (!SpeechRecognition) { alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome.'); return null; }
+const PASOS_VOZ = ['especialidad', 'medico', 'fecha', 'hora', 'motivo', 'confirmar'];
+const STEP_IDS = { especialidad:'step-esp', medico:'step-med', fecha:'step-fecha', hora:'step-hora', motivo:'step-motivo', confirmar:'step-confirm' };
+
+let recognition = null;
+let micActivo = false;
+let botHablando = false;
+let ultimoTextoProcesado = '';
+let pasoActual = 'especialidad';
+
+let citaVoz = {
+  especialidad_id: null,
+  especialidad_nombre: '',
+  medico_id: null,
+  medico_nombre: '',
+  fecha: null,
+  fecha_legible: '',
+  hora: null,
+  motivo: '',
+  medicos: [],
+  horarios: []
+};
+
+const especialidades_kw = {
+  'cardiologia': 1, 'cardiología': 1, 'corazon': 1, 'corazón': 1,
+  'pediatria': 2, 'pediatría': 2, 'ninos': 2, 'niños': 2, 'niño': 2,
+  'ginecologia': 3, 'ginecología': 3, 'mujer': 3,
+  'traumatologia': 4, 'traumatología': 4, 'huesos': 4, 'hueso': 4,
+  'medicina general': 5, 'general': 5,
+  'oftalmologia': 6, 'oftalmología': 6, 'ojos': 6, 'ojo': 6,
+  'neurologia': 7, 'neurología': 7, 'cerebro': 7,
+  'dermatologia': 8, 'dermatología': 8, 'piel': 8
+};
+
+const mesesMap = {
+  enero:0, febrero:1, marzo:2, abril:3, mayo:4, junio:5,
+  julio:6, agosto:7, septiembre:8, setiembre:8, octubre:9, noviembre:10, diciembre:11
+};
+
+const horasMap = {
+  'ocho':'08:00','ocho y media':'08:30','nueve':'09:00','nueve y media':'09:30',
+  'diez':'10:00','diez y media':'10:30','once':'11:00','once y media':'11:30',
+  'doce':'12:00','una':'13:00','dos':'14:00','dos y media':'14:30',
+  'tres':'15:00','tres y media':'15:30','cuatro':'16:00','cuatro y media':'16:30',
+  'catorce':'14:00','catorce y media':'14:30','quince':'15:00','quince y media':'15:30',
+  'dieciseis':'16:00','dieciséis':'16:00','dieciseis y media':'16:30'
+};
+
+function normalizar(txt) {
+  return txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+function formatISO(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatFechaLegible(iso) {
+  const [y,m,d] = iso.split('-');
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${d}/${meses[parseInt(m)-1]}/${y}`;
+}
+
+function actualizarPasosUI() {
+  PASOS_VOZ.forEach((p, i) => {
+    const el = document.getElementById(STEP_IDS[p]);
+    if (!el) return;
+    el.classList.remove('active-step','done-step');
+    const idxActual = PASOS_VOZ.indexOf(pasoActual);
+    if (p === pasoActual) el.classList.add('active-step');
+    else if (i < idxActual) el.classList.add('done-step');
+  });
+}
+
+function actualizarResumenUI() {
+  const campos = {
+    'campo-esp': citaVoz.especialidad_nombre,
+    'campo-med': citaVoz.medico_nombre,
+    'campo-fecha': citaVoz.fecha_legible,
+    'campo-hora': citaVoz.hora,
+    'campo-motivo': citaVoz.motivo || '—'
+  };
+  for (const [id, val] of Object.entries(campos)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const strong = el.querySelector('strong');
+    strong.textContent = val || '—';
+    el.classList.toggle('lleno', !!val && val !== '—');
+  }
+}
+
+function sincronizarFormularioManual() {
+  const selEsp = document.getElementById('sel-esp');
+  const selMed = document.getElementById('sel-med');
+  const inpFecha = document.getElementById('inp-fecha');
+  const inpHora = document.getElementById('inp-hora');
+  const tipoInput = document.querySelector('#form-cita input[name="tipo"]');
+  const motivoInput = document.querySelector('#form-cita textarea[name="motivo"]');
+
+  if (citaVoz.especialidad_id) {
+    selEsp.value = citaVoz.especialidad_id;
+    if (citaVoz.medico_id) {
+      fetch(`/api/medicos/${citaVoz.especialidad_id}`).then(r => r.json()).then(data => {
+        selMed.innerHTML = '<option value="">— Selecciona un médico —</option>' +
+          data.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+        selMed.value = citaVoz.medico_id;
+        if (citaVoz.fecha && citaVoz.hora) cargarHorarios();
+      });
+    }
+  }
+  if (tipoInput) tipoInput.value = 'voz';
+  if (citaVoz.fecha) inpFecha.value = citaVoz.fecha;
+  if (citaVoz.motivo && motivoInput) motivoInput.value = citaVoz.motivo;
+  if (citaVoz.hora) inpHora.value = citaVoz.hora;
+}
+
+async function cargarMedicosVoz(espId) {
+  const r = await fetch(`/api/medicos/${espId}`);
+  citaVoz.medicos = await r.json();
+  return citaVoz.medicos;
+}
+
+async function cargarHorariosVoz(medId, fecha) {
+  const r = await fetch(`/api/horarios/${medId}/${fecha}`);
+  citaVoz.horarios = await r.json();
+  return citaVoz.horarios;
+}
+
+function detectarEspecialidad(t) {
+  const keywords = Object.entries(especialidades_kw).sort((a,b) => b[0].length - a[0].length);
+  for (const [kw, id] of keywords) {
+    if (t.includes(normalizar(kw))) return { id, nombre: ESPECIALIDADES_NOMBRE[id] || kw };
+  }
+  return null;
+}
+
+function detectarMedico(t) {
+  if (!citaVoz.medicos.length) return null;
+  if (/primero|uno|1|opcion 1/.test(t)) return citaVoz.medicos[0];
+  if (/segundo|dos|2|opcion 2/.test(t) && citaVoz.medicos[1]) return citaVoz.medicos[1];
+  if (/tercero|tres|3|opcion 3/.test(t) && citaVoz.medicos[2]) return citaVoz.medicos[2];
+  for (const m of citaVoz.medicos) {
+    const partes = normalizar(m.nombre).split(' ');
+    if (partes.some(p => p.length > 3 && t.includes(p))) return m;
+  }
+  if (citaVoz.medicos.length === 1) return citaVoz.medicos[0];
+  return null;
+}
+
+function parsearFecha(t) {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+  if (/\bhoy\b/.test(t)) return formatISO(hoy);
+  if (/pasado manana/.test(t)) { const d = new Date(hoy); d.setDate(d.getDate()+2); return formatISO(d); }
+  if (/manana/.test(t)) { const d = new Date(hoy); d.setDate(d.getDate()+1); return formatISO(d); }
+
+  for (const [mes, idx] of Object.entries(mesesMap)) {
+    const m1 = t.match(new RegExp('(\\d{1,2})\\s*(de\\s*)?' + mes));
+    const m2 = t.match(new RegExp(mes + '\\s*(\\d{1,2})'));
+    if (m1 || m2) {
+      const dia = parseInt((m1 || m2)[1]);
+      let d = new Date(hoy.getFullYear(), idx, dia);
+      if (d < hoy) d.setFullYear(d.getFullYear() + 1);
+      return formatISO(d);
+    }
+  }
+
+  const iso = t.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const sl = t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (sl) return `${sl[3]}-${sl[2].padStart(2,'0')}-${sl[1].padStart(2,'0')}`;
+  const corto = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if (corto) {
+    let d = new Date(hoy.getFullYear(), parseInt(corto[2])-1, parseInt(corto[1]));
+    if (d < hoy) d.setFullYear(d.getFullYear()+1);
+    return formatISO(d);
+  }
+  return null;
+}
+
+function parsearHora(t) {
+  for (const h of citaVoz.horarios) {
+    const hNorm = h.replace(':', ' ');
+    if (t.includes(h) || t.includes(hNorm)) return h;
+  }
+  const entries = Object.entries(horasMap).sort((a,b) => b[0].length - a[0].length);
+  for (const [frase, hora] of entries) {
+    if (t.includes(frase) && citaVoz.horarios.includes(hora)) return hora;
+  }
+  const m = t.match(/(\d{1,2})\s*:\s*(\d{2})/);
+  if (m) {
+    const cand = `${m[1].padStart(2,'0')}:${m[2]}`;
+    if (citaVoz.horarios.includes(cand)) return cand;
+  }
+  if (citaVoz.horarios.length === 1) return citaVoz.horarios[0];
+  return null;
+}
+
+function responderIA(texto, voz) {
+  addMsg('ia', texto);
+  hablar(voz || texto);
+}
+
+function avanzarPaso(nuevoPaso) {
+  pasoActual = nuevoPaso;
+  actualizarPasosUI();
+  actualizarResumenUI();
+  sincronizarFormularioManual();
+}
+
+async function procesarVoz(texto) {
+  addMsg('user', texto);
+  const t = normalizar(texto);
+
+  if (/hola|buenos|buenas/.test(t) && pasoActual === 'especialidad' && !citaVoz.especialidad_id) {
+    responderIA('¡Hola! Vamos a agendar tu cita paso a paso. ¿Qué especialidad necesitas?',
+      'Hola. ¿Qué especialidad necesitas?');
+    return;
+  }
+
+  if (/ayuda|que puedo|como funciona/.test(t)) {
+    const ayuda = {
+      especialidad: 'Di la especialidad, por ejemplo: pediatría o cardiología.',
+      medico: 'Di el nombre del médico o el número de la lista.',
+      fecha: 'Di la fecha, por ejemplo: mañana, o 20 de junio.',
+      hora: 'Di la hora disponible, por ejemplo: nueve y media o 10:00.',
+      motivo: 'Di el motivo de tu consulta, o di "ninguno" para omitir.',
+      confirmar: 'Di "sí confirmo" para registrar la cita, o "no" para corregir.'
+    };
+    responderIA(ayuda[pasoActual], ayuda[pasoActual]);
+    return;
+  }
+
+  switch (pasoActual) {
+
+    case 'especialidad': {
+      const esp = detectarEspecialidad(t);
+      if (!esp) {
+        responderIA('No identifiqué la especialidad. Di por ejemplo: pediatría, cardiología o traumatología.',
+          'Por favor dime la especialidad que necesitas.');
+        return;
+      }
+      citaVoz.especialidad_id = esp.id;
+      citaVoz.especialidad_nombre = esp.nombre;
+      const medicos = await cargarMedicosVoz(esp.id);
+
+      if (!medicos.length) {
+        responderIA(`No hay médicos disponibles en ${esp.nombre}. Elige otra especialidad.`,
+          'No hay médicos disponibles en esa especialidad.');
+        citaVoz.especialidad_id = null;
+        citaVoz.especialidad_nombre = '';
+        return;
+      }
+
+      avanzarPaso('medico');
+      const lista = medicos.map((m,i) => `${i+1}. ${m.nombre}`).join('\n');
+      if (medicos.length === 1) {
+        citaVoz.medico_id = medicos[0].id;
+        citaVoz.medico_nombre = medicos[0].nombre;
+        avanzarPaso('fecha');
+        responderIA(`Perfecto, ${esp.nombre}. Solo hay un médico: ${medicos[0].nombre}. ¿Para qué fecha quieres la cita? Puedes decir mañana o un día como 20 de junio.`,
+          `Médico asignado. ¿Para qué fecha quieres la cita?`);
+      } else {
+        responderIA(`Excelente, ${esp.nombre}. Estos son los médicos disponibles:\n${lista}\n¿Con cuál deseas atenderte?`,
+          `Elige un médico. ${medicos.map((m,i)=>`opción ${i+1}, ${m.nombre}`).join('. ')}`);
+      }
+      return;
+    }
+
+    case 'medico': {
+      const med = detectarMedico(t);
+      if (!med) {
+        const lista = citaVoz.medicos.map((m,i) => `${i+1}. ${m.nombre}`).join(', ');
+        responderIA(`No identifiqué al médico. Opciones: ${lista}`,
+          'Por favor di el nombre del médico o el número de la opción.');
+        return;
+      }
+      citaVoz.medico_id = med.id;
+      citaVoz.medico_nombre = med.nombre;
+      avanzarPaso('fecha');
+      responderIA(`Muy bien, cita con ${med.nombre}. ¿Para qué fecha? Puedes decir mañana, pasado mañana, o un día como 15 de junio.`,
+        '¿Para qué fecha deseas la cita?');
+      return;
+    }
+
+    case 'fecha': {
+      const fechaISO = parsearFecha(t);
+      if (!fechaISO || fechaISO < today) {
+        responderIA('No entendí la fecha o es una fecha pasada. Di por ejemplo: mañana, o 20 de junio.',
+          'Por favor di una fecha válida, como mañana o 20 de junio.');
+        return;
+      }
+      citaVoz.fecha = fechaISO;
+      citaVoz.fecha_legible = formatFechaLegible(fechaISO);
+      const horarios = await cargarHorariosVoz(citaVoz.medico_id, fechaISO);
+
+      if (!horarios.length) {
+        responderIA(`No hay horarios libres el ${citaVoz.fecha_legible}. Prueba con otra fecha.`,
+          'No hay horarios disponibles ese día. Di otra fecha.');
+        citaVoz.fecha = null;
+        citaVoz.fecha_legible = '';
+        return;
+      }
+
+      citaVoz.horarios = horarios;
+      avanzarPaso('hora');
+      const listaH = horarios.join(', ');
+      responderIA(`Fecha ${citaVoz.fecha_legible}. Horarios disponibles: ${listaH}. ¿Qué hora prefieres?`,
+        `Horarios disponibles: ${listaH}. ¿Qué hora eliges?`);
+      return;
+    }
+
+    case 'hora': {
+      const hora = parsearHora(t);
+      if (!hora) {
+        responderIA(`No identifiqué la hora. Disponibles: ${citaVoz.horarios.join(', ')}`,
+          'Di una hora de la lista disponible.');
+        return;
+      }
+      citaVoz.hora = hora;
+      avanzarPaso('motivo');
+      responderIA(`Hora ${hora} reservada. ¿Cuál es el motivo de tu consulta? Puedes decir "ninguno" si prefieres omitirlo.`,
+        '¿Cuál es el motivo de tu consulta? Di ninguno para omitir.');
+      return;
+    }
+
+    case 'motivo': {
+      if (/^(ninguno|nada|omitir|saltar|sin motivo)$/.test(t) || t === 'no') {
+        citaVoz.motivo = '';
+      } else {
+        citaVoz.motivo = texto.trim();
+      }
+      avanzarPaso('confirmar');
+      const resumen = `Especialidad: ${citaVoz.especialidad_nombre}. Médico: ${citaVoz.medico_nombre}. Fecha: ${citaVoz.fecha_legible}. Hora: ${citaVoz.hora}.${citaVoz.motivo ? ' Motivo: '+citaVoz.motivo+'.' : ''}`;
+      responderIA(`${resumen}\n¿Confirmas tu cita? Di "sí confirmo" o "no" para corregir.`,
+        `Resumen de tu cita. ${resumen} ¿Confirmas? Di sí confirmo.`);
+      return;
+    }
+
+    case 'confirmar': {
+      if (/^(si|sí|confirmo|confirmar|correcto|dale|ok|esta bien|de acuerdo)/.test(t) || t.includes('si confirmo') || t.includes('sí confirmo')) {
+        await registrarCitaVoz();
+        return;
+      }
+      if (/^(no|cancelar|corregir|cambiar)/.test(t)) {
+        responderIA('De acuerdo. ¿Qué deseas cambiar? Di: especialidad, médico, fecha, hora o motivo.',
+          '¿Qué dato quieres cambiar? Di especialidad, médico, fecha, hora o motivo.');
+        pasoActual = 'corregir';
+        return;
+      }
+      responderIA('Di "sí confirmo" para registrar la cita, o "no" para corregir algún dato.',
+        'Di sí confirmo para registrar, o no para corregir.');
+      return;
+    }
+
+    case 'corregir': {
+      if (t.includes('especialidad')) { reiniciarDesde('especialidad'); responderIA('De acuerdo, empecemos de nuevo. ¿Qué especialidad necesitas?', '¿Qué especialidad necesitas?'); }
+      else if (t.includes('medico') || t.includes('médico')) { reiniciarDesde('medico'); responderIA('¿Con qué médico deseas la cita?', '¿Qué médico prefieres?'); }
+      else if (t.includes('fecha')) { reiniciarDesde('fecha'); responderIA('¿Para qué fecha?', '¿Qué fecha prefieres?'); }
+      else if (t.includes('hora')) { reiniciarDesde('hora'); responderIA(`Horarios: ${citaVoz.horarios.join(', ')}. ¿Qué hora?`, '¿Qué hora prefieres?'); }
+      else if (t.includes('motivo')) { avanzarPaso('motivo'); responderIA('¿Cuál es el motivo de consulta?', 'Di el motivo de tu consulta.'); }
+      else { responderIA('Di qué quieres cambiar: especialidad, médico, fecha, hora o motivo.', 'Di qué dato quieres corregir.'); }
+      return;
+    }
+  }
+}
+
+function reiniciarDesde(paso) {
+  if (paso === 'especialidad') {
+    citaVoz = { especialidad_id:null, especialidad_nombre:'', medico_id:null, medico_nombre:'',
+      fecha:null, fecha_legible:'', hora:null, motivo:'', medicos:[], horarios:[] };
+  } else if (paso === 'medico') {
+    citaVoz.medico_id = null; citaVoz.medico_nombre = '';
+    citaVoz.fecha = null; citaVoz.fecha_legible = ''; citaVoz.hora = null; citaVoz.horarios = [];
+  } else if (paso === 'fecha') {
+    citaVoz.fecha = null; citaVoz.fecha_legible = ''; citaVoz.hora = null; citaVoz.horarios = [];
+  } else if (paso === 'hora') {
+    citaVoz.hora = null;
+  }
+  avanzarPaso(paso);
+}
+
+async function registrarCitaVoz() {
+  sincronizarFormularioManual();
+  const fd = new FormData();
+  fd.append('especialidad_id', citaVoz.especialidad_id);
+  fd.append('medico_id', citaVoz.medico_id);
+  fd.append('fecha', citaVoz.fecha);
+  fd.append('hora', citaVoz.hora);
+  fd.append('motivo', citaVoz.motivo || '');
+  fd.append('tipo', 'voz');
+
+  addMsg('ia', 'Registrando tu cita...');
+  setStatus('Guardando cita...');
+
+  try {
+    const r = await fetch('/solicitar-cita', { method: 'POST', body: fd, credentials: 'same-origin', redirect: 'follow' });
+    if (r.ok) {
+      addMsg('ia', '¡Cita registrada exitosamente! Redirigiendo a tu panel...');
+      hablar('¡Listo! Tu cita fue registrada.');
+      setTimeout(() => { window.location.href = '/dashboard'; }, 2500);
+    } else {
+      responderIA('Hubo un problema al registrar. Verifica los datos en el formulario manual.',
+        'No se pudo registrar. Revisa el formulario manual.');
+    }
+  } catch (e) {
+    responderIA('Error de conexión. Intenta confirmar desde el formulario manual.', 'Error al registrar la cita.');
+  }
+}
+
+function crearReconocimiento() {
+  if (!SpeechRecognition) {
+    alert('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome.');
+    return null;
+  }
+
   const r = new SpeechRecognition();
-  r.lang = 'es-PE'; r.continuous = false; r.interimResults = true;
-  r.onstart = () => { setStatus('🔴 Escuchando...'); };
+  r.lang = 'es-PE';
+  r.continuous = false;
+  r.interimResults = true;
+
+  r.onstart = () => {
+    actualizarMicUI();
+    setStatus('Escuchando... habla ahora.');
+  };
+
   r.onresult = e => {
+    if (botHablando || !micActivo) return;
+
     let final = '', interim = '';
-    for (let i=e.resultIndex;i<e.results.length;i++) {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) final += e.results[i][0].transcript;
       else interim += e.results[i][0].transcript;
     }
     document.getElementById('transcript').textContent = final || interim || '...';
-    if (final) procesarVoz(final.trim());
+
+    const texto = final.trim();
+    if (texto && texto !== ultimoTextoProcesado) {
+      ultimoTextoProcesado = texto;
+      apagarMicrofono();
+      procesarVoz(texto);
+    }
   };
-  r.onerror = e => { setStatus('Error: ' + e.error); stopListening(); };
-  r.onend = () => stopListening();
+
+  r.onerror = e => {
+    if (e.error === 'aborted' || e.error === 'no-speech') {
+      if (micActivo) {
+        apagarMicrofono();
+        setStatus('No te escuché. Presiona el micrófono e intenta de nuevo.');
+      }
+      return;
+    }
+
+    apagarMicrofono();
+
+    if (e.error === 'network') {
+      setStatus('Servicio de voz no disponible. Usa Google Chrome con internet, o desactiva Shields en Brave.');
+      return;
+    }
+
+    if (e.error === 'not-allowed') {
+      setStatus('Permiso de micrófono denegado. Actívalo en la configuración del navegador.');
+      return;
+    }
+
+    setStatus('Error de reconocimiento. Presiona el micrófono para intentar de nuevo.');
+  };
+
+  r.onend = () => {
+    if (micActivo && !botHablando) {
+      apagarMicrofono();
+      setStatus('Presiona el micrófono para volver a hablar.');
+    }
+  };
+
   return r;
 }
 
+function actualizarMicUI() {
+  const btn = document.getElementById('micBtn');
+  const icon = document.getElementById('micIcon');
+  const escuchando = micActivo && !botHablando;
+
+  btn.classList.toggle('listening', escuchando);
+  btn.classList.toggle('speaking', botHablando);
+  btn.disabled = botHablando;
+  icon.className = escuchando ? 'fas fa-stop' : 'fas fa-microphone';
+}
+
+function destruirReconocimiento() {
+  if (recognition) {
+    try { recognition.abort(); } catch (e) {}
+    recognition = null;
+  }
+}
+
+function apagarMicrofono() {
+  micActivo = false;
+  if (recognition) {
+    try { recognition.stop(); } catch (e) {}
+  }
+  destruirReconocimiento();
+  actualizarMicUI();
+}
+
+function encenderMicrofono() {
+  if (!isVozTabActiva() || botHablando) return;
+
+  destruirReconocimiento();
+  ultimoTextoProcesado = '';
+  micActivo = true;
+  recognition = crearReconocimiento();
+  if (!recognition) {
+    micActivo = false;
+    return;
+  }
+
+  actualizarMicUI();
+  try {
+    recognition.start();
+  } catch (e) {
+    apagarMicrofono();
+    setStatus('No se pudo activar el micrófono. Presiona de nuevo.');
+  }
+}
+
+function detenerAsistenteVoz() {
+  micActivo = false;
+  botHablando = false;
+  ultimoTextoProcesado = '';
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  destruirReconocimiento();
+  actualizarMicUI();
+}
+
 function toggleVoz() {
-  if (listening) { stopListening(); return; }
-  if (!recognition) recognition = initSpeech();
-  if (!recognition) return;
-  listening = true;
-  document.getElementById('micBtn').classList.add('listening');
-  document.getElementById('micIcon').className = 'fas fa-stop';
-  recognition.start();
-}
-function stopListening() {
-  listening = false;
-  document.getElementById('micBtn').classList.remove('listening');
-  document.getElementById('micIcon').className = 'fas fa-microphone';
-  setStatus('Listo para escuchar');
-  try { recognition && recognition.stop(); } catch(e){}
-}
-function setStatus(msg) { document.getElementById('voz-status').textContent = msg; }
+  if (botHablando) return;
 
-const especialidades_kw = {
-  'cardiología':1,'corazón':1,'pediatría':2,'niños':2,'ginecología':3,'mujer':3,
-  'traumatología':4,'huesos':4,'medicina general':5,'general':5,'oftalmología':6,'ojos':6,'neurología':7,'cerebro':7,'dermatología':8,'piel':8
-};
-
-function procesarVoz(texto) {
-  addMsg('user', texto);
-  const t = texto.toLowerCase();
-
-  // Detectar especialidad
-  for (const [kw, id] of Object.entries(especialidades_kw)) {
-    if (t.includes(kw)) {
-      addMsg('ia', `Entendido. Voy a registrarte en ${kw.charAt(0).toUpperCase()+kw.slice(1)}. Te llevo al formulario para completar la fecha y hora.`);
-      speak(`Perfecto, seleccionando ${kw}. Ahora completa la fecha en el formulario.`);
-      setTimeout(()=>{
-        switchTab('manual');
-        const sel = document.getElementById('sel-esp');
-        sel.value = id; cargarMedicos();
-        flash(`✅ Especialidad "${kw}" seleccionada desde el asistente de voz.`);
-      }, 1500);
-      return;
-    }
+  if (micActivo) {
+    apagarMicrofono();
+    setStatus('Micrófono apagado. Presiona para volver a hablar.');
+    return;
   }
-  // Saludos
-  if (/hola|buenos|buenas/.test(t)) { addMsg('ia','¡Hola! ¿En qué especialidad necesitas tu cita médica hoy?'); speak('Hola, ¿qué especialidad necesitas?'); return; }
-  // Ayuda
-  if (/ayuda|no sé|qué/.test(t)) {
-    addMsg('ia','Tenemos: Cardiología, Pediatría, Ginecología, Traumatología, Medicina General, Oftalmología, Neurología y Dermatología. ¿Cuál necesitas?');
-    speak('Dime qué especialidad necesitas'); return;
+
+  encenderMicrofono();
+}
+
+function setStatus(msg) {
+  document.getElementById('voz-status').textContent = msg;
+}
+
+function isVozTabActiva() {
+  return document.getElementById('panel-voz').classList.contains('active');
+}
+
+function hablar(texto) {
+  apagarMicrofono();
+  botHablando = true;
+  actualizarMicUI();
+  setStatus('El asistente está hablando...');
+
+  if (!window.speechSynthesis) {
+    botHablando = false;
+    actualizarMicUI();
+    setStatus('Presiona el micrófono para responder.');
+    return;
   }
-  addMsg('ia','No pude identificar la especialidad. Puedes decir por ejemplo: "necesito cardiología" o "quiero pediatría".');
-  speak('Por favor dime la especialidad que necesitas');
+
+  window.speechSynthesis.cancel();
+
+  const u = new SpeechSynthesisUtterance(texto);
+  u.lang = 'es-PE';
+  u.rate = 0.95;
+
+  u.onend = () => {
+    botHablando = false;
+    actualizarMicUI();
+    setStatus('Presiona el micrófono para responder.');
+  };
+
+  u.onerror = () => {
+    botHablando = false;
+    actualizarMicUI();
+    setStatus('No se pudo reproducir la voz. Presiona el micrófono para intentar de nuevo.');
+  };
+
+  window.speechSynthesis.speak(u);
 }
 
 function addMsg(role, text) {
   const box = document.getElementById('chatBox');
   const d = document.createElement('div');
-  d.className = `msg ${role}`; d.textContent = text;
-  box.appendChild(d); box.scrollTop = box.scrollHeight;
-}
-
-function speak(text) {
-  if (!window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'es-PE'; u.rate = 0.95; speechSynthesis.speak(u);
+  d.className = `msg ${role}`;
+  d.textContent = text;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
 }
 
 function resetChat() {
-  document.getElementById('chatBox').innerHTML = '<div class="msg ia">Hola, soy el asistente del Hospital Lanfranco La Hoz. ¿En qué especialidad necesitas tu cita?</div>';
+  detenerAsistenteVoz();
+  pasoActual = 'especialidad';
+  citaVoz = { especialidad_id:null, especialidad_nombre:'', medico_id:null, medico_nombre:'',
+    fecha:null, fecha_legible:'', hora:null, motivo:'', medicos:[], horarios:[] };
+  actualizarPasosUI();
+  actualizarResumenUI();
+  document.getElementById('chatBox').innerHTML =
+    '<div class="msg ia">Hola, soy el asistente del Hospital Lanfranco La Hoz. Te guiaré paso a paso para agendar tu cita. ¿Qué especialidad necesitas?</div>';
   document.getElementById('transcript').textContent = 'Presiona el micrófono y habla...';
-  setStatus('Listo para escuchar');
+  setStatus('Presiona el micrófono para empezar.');
 }
 
-function flash(msg) {
+function mostrarFlash(msg) {
   const d = document.createElement('div');
-  d.className='flash success'; d.innerHTML=`<i class="fas fa-check-circle"></i> ${msg}`;
+  d.className = 'flash success';
+  d.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
   document.querySelector('.flash-container').prepend(d);
-  setTimeout(()=>d.remove(),4000);
+  setTimeout(() => d.remove(), 4000);
 }
+
+actualizarPasosUI();
+actualizarResumenUI();
 </script>
 {% endblock %}

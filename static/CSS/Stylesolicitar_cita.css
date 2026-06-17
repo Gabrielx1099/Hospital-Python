@@ -32,12 +32,28 @@ select.form-control{cursor:pointer;}
 .mic-btn{width:100px;height:100px;border-radius:50%;border:none;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-size:2.4rem;cursor:pointer;transition:.3s;box-shadow:0 8px 24px rgba(59,130,246,.4);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;}
 .mic-btn:hover{transform:scale(1.08);box-shadow:0 12px 32px rgba(59,130,246,.6);}
 .mic-btn.listening{animation:pulse 1.2s infinite;background:linear-gradient(135deg,#ef4444,#dc2626);}
+.mic-btn.speaking{background:linear-gradient(135deg,#8b5cf6,#6d28d9);cursor:not-allowed;animation:none;box-shadow:0 8px 24px rgba(139,92,246,.4);}
+.mic-btn:disabled{opacity:.85;cursor:not-allowed;}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.5);}70%{box-shadow:0 0 0 20px rgba(239,68,68,0);}100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}}
 .voz-status{font-size:.9rem;color:#93c5fd;min-height:24px;margin-bottom:16px;}
 .voz-transcript{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;min-height:80px;color:#e2e8f0;font-size:.9rem;line-height:1.6;text-align:left;margin-bottom:20px;}
-.voz-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.voz-steps{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px;}
+@media(max-width:768px){.voz-steps{grid-template-columns:repeat(3,1fr);}}
+.voz-step.active-step{background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.4);}
+.voz-step.done-step .num{color:#34d399;}
+.voz-resumen{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;margin-bottom:16px;text-align:left;}
+.voz-resumen-title{font-weight:700;color:#93c5fd;margin-bottom:12px;font-size:.9rem;}
+.voz-resumen-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:600px){.voz-resumen-grid{grid-template-columns:1fr;}}
+.voz-campo{background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;}
+.voz-campo span{display:block;font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.voz-campo strong{color:#e2e8f0;font-size:.88rem;word-break:break-word;}
+.voz-campo.lleno strong{color:#93c5fd;}
 .voz-step{background:rgba(255,255,255,.06);border-radius:10px;padding:14px;font-size:.8rem;color:#cbd5e1;}
 .voz-step .num{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.3rem;color:#60a5fa;margin-bottom:4px;}
+.voz-compat-notice{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.82rem;color:#93c5fd;line-height:1.6;text-align:left;display:flex;flex-direction:column;gap:4px;}
+.voz-compat-notice i{margin-right:6px;}
+.voz-compat-brave{color:#fbbf24;font-size:.8rem;}
 .chat-box{background:rgba(255,255,255,.04);border-radius:12px;padding:16px;max-height:200px;overflow-y:auto;text-align:left;margin-bottom:16px;}
 .msg{margin-bottom:10px;font-size:.85rem;line-height:1.5;}
 .msg.ia{color:#93c5fd;} .msg.ia::before{content:'🤖 IA: ';}
