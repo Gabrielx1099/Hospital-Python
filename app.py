@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'hospital_lanfranco_secret_2024'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:25Defebrero?@localhost:3306/hospital_lanfranco'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/hospital_lanfranco'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
