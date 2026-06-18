@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Panel Médico - Hospital Lanfranco La Hoz{% endblock %}
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/Styledoctor.css') }}">
+
+{% endblock %}
+
+{% block content %}
+
+<div class="doctor-container">
+
+<div class="doctor-header">
+
+    <h1>
+         Dr. {{ medico.nombre }} {{ medico.apellido }}
+    </h1>
+
+    <div class="doctor-info">
+
+        <div class="info-card">
+            <strong>CMP</strong><br>
+            {{ medico.cmp }}
+        </div>
+
+        <div class="info-card">
+            <strong>Especialidad</strong><br>
+            {{ medico.especialidad.nombre }}
+        </div>
+
+        <div class="info-card">
+            <strong>Total de citas</strong><br>
+            {{ citas|length }}
+        </div>
+
+    </div>
+
+</div>
+
+<div class="citas-section">
+
+    <h2>📅 Agenda Médica</h2>
+
+    <div class="dias-nav">
+
+        <button class="day-btn active"
+        onclick="filtrarDia('all', this)">
+    Todas
+</button>
+
+<button class="day-btn"
+        onclick="filtrarDia('0', this)">
+    Lun
+</button>
+
+<button class="day-btn"
+        onclick="filtrarDia('1', this)">
+    Mar
+</button>
+
+<button class="day-btn"
+        onclick="filtrarDia('2', this)">
+    Mié
+</button>
+
+<button class="day-btn"
+        onclick="filtrarDia('3', this)">
+    Jue
+</button>
+
+<button class="day-btn"
+        onclick="filtrarDia('4', this)">
+    Vie
+</button>
+
+<button class="day-btn"
+        onclick="filtrarDia('5', this)">
+    Sáb
+</button>
+
+<button class="day-btn"
+        onclick="filtrarDia('6', this)">
+    Dom
+</button>
+
+    </div>
+
+    {% if citas %}
+
+    <div class="agenda-lista">
+
+        {% for cita in citas %}
+
+        <div class="agenda-card" data-dia="{{ cita.dia_semana }}">
+            
+    <div class="agenda-col hora">
+        {{ cita.hora }}
+    </div>
+
+    <div class="agenda-col paciente">
+        {{ cita.paciente.nombre }}
+        {{ cita.paciente.apellido }}
+    </div>
+
+    <div class="agenda-col fecha">
+        {{ cita.fecha.strftime('%d/%m/%Y') }}
+    </div>
+
+    <div class="agenda-col dni">
+        {{ cita.paciente.dni }}
+    </div>
+
+    <div class="agenda-col telefono">
+        {{ cita.paciente.telefono }}
+    </div>
+
+    <div class="agenda-col motivo">
+        {{ cita.motivo }}
+    </div>
+
+    <div class="agenda-col">
+
+        {% if cita.estado == 'Pendiente' %}
+            <span class="estado estado-pendiente">
+                {{ cita.estado }}
+            </span>
+
+        {% elif cita.estado == 'Confirmada' %}
+            <span class="estado estado-confirmada">
+                {{ cita.estado }}
+            </span>
+
+        {% else %}
+            <span class="estado estado-cancelada">
+                {{ cita.estado }}
+            </span>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+        {% endfor %}
+
+    </div>
+
+   
+
+    {% else %}
+
+    <div class="no-citas">
+        <h3>No tienes citas programadas</h3>
+    </div>
+
+    {% endif %}
+
+</div>
+
+<script>
+
+function filtrarDia(dia, boton){
+
+    document
+        .querySelectorAll('.day-btn')
+        .forEach(btn => btn.classList.remove('active'));
+
+    boton.classList.add('active');
+
+    document
+        .querySelectorAll('.agenda-card')
+        .forEach(card => {
+
+            if(
+                dia === 'all' ||
+                card.dataset.dia === dia
+            ){
+                card.style.display = 'flex';
+            }
+            else{
+                card.style.display = 'none';
+            }
+
+        });
+}
+
+</script>
+</div>
+
+</div>
+
+{% endblock %}

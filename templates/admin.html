@@ -25,7 +25,10 @@
       <button class="stab active" onclick="switchTab('citas', this)">📋 Citas recientes</button>
       <button class="stab" onclick="switchTab('pacientes', this)">🧑 Pacientes</button>
       <button class="stab" onclick="switchTab('medicos', this)">👨‍⚕️ Médicos</button>
-    </div>
+      <button class="stab" onclick="switchTab('crear-doctor', this)">➕ Agregar Doctor</button>
+    <button class="stab" onclick="switchTab('especialidades', this)">🏥 Especialidades</button>
+   <button class="stab" onclick="switchTab('horarios', this)">🕒 Horarios</button> 
+  </div>
 
     <!-- ─── TAB CITAS ─── -->
     <div id="pane-citas" class="tab-pane active">
@@ -136,7 +139,536 @@
       </div>
     </div>
 
+
+    <div id="pane-crear-doctor" class="tab-pane">
+      <div class="table-header">
+        <div class="table-title">
+            ➕ Registrar Nuevo Doctor
+        </div>
+    </div>
+
+<form class="doctor-form"
+      method="POST"
+      action="/admin/doctor/crear"
+      onsubmit="localStorage.setItem('adminTab','crear-doctor')">
+<div class="form-grid">
+
+    <div class="form-group">
+        <label>Nombre</label>
+        <input
+            type="text"
+            name="nombre"
+            required
+            minlength="2"
+            maxlength="50"
+            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]+"
+            title="Solo letras y espacios">
+    </div>
+
+    <div class="form-group">
+        <label>Apellido</label>
+        <input
+            type="text"
+            name="apellido"
+            required
+            minlength="2"
+            maxlength="50"
+            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]+"
+            title="Solo letras y espacios">
+    </div>
+
+    <div class="form-group">
+        <label>DNI</label>
+        <input
+            type="text"
+            name="dni"
+            required
+            minlength="8"
+            maxlength="8"
+            pattern="[0-9]{8}"
+            title="El DNI debe tener exactamente 8 dígitos">
+    </div>
+
+    <div class="form-group">
+        <label>CMP</label>
+        <input
+            type="text"
+            name="cmp"
+            required
+            minlength="5"
+            maxlength="15"
+            pattern="[A-Za-z0-9]+"
+            title="Solo letras y números">
+    </div>
+
+    <div class="form-group">
+        <label>Correo</label>
+        <input
+            type="email"
+            name="email"
+            required
+            maxlength="100">
+    </div>
+
+    <div class="form-group">
+        <label>Teléfono</label>
+        <input
+            type="text"
+            name="telefono"
+            required
+            minlength="9"
+            maxlength="9"
+            pattern="[0-9]{9}"
+            title="El teléfono debe tener 9 dígitos">
+    </div>
+
+    <div class="form-group">
+        <label>Contraseña</label>
+        <input
+            type="password"
+            name="password"
+            required
+            minlength="8"
+            maxlength="50"
+            title="Mínimo 8 caracteres">
+    </div>
+
+    <div class="form-group">
+        <label>Especialidad</label>
+
+        <select name="especialidad_id" required>
+            <option value="">Seleccione una especialidad</option>
+
+            {% for e in especialidades %}
+            <option value="{{ e.id }}">
+                {{ e.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+
+    </div>
+    
+
+</div>
+
+<button type="submit" class="btn-primary">
+    Registrar Doctor
+</button>
+
+
+</form>
+
+
   </div><!-- /table-card -->
+
+  <!-- ─── TAB ESPECIALIDADES ─── -->
+
+<div id="pane-especialidades" class="tab-pane">
+<div class="table-header">
+    <div class="table-title">
+        🏥 Gestión de Especialidades
+    </div>
+</div>
+
+<!-- Formulario -->
+<form method="POST" action="/admin/especialidad/crear" class="doctor-form"  onsubmit="localStorage.setItem('adminTab','especialidades')">
+
+    <div class="form-grid">
+
+        <div class="form-group">
+            <label>Nombre</label>
+            <input
+                type="text"
+                name="nombre"
+                required
+                minlength="3"
+                maxlength="100">
+        </div>
+
+        <div class="form-group">
+            <label>Descripción</label>
+            <input
+                type="text"
+                name="descripcion"
+                maxlength="255">
+        </div>
+
+    </div>
+
+    <button type="submit" class="btn-primary">
+        Agregar Especialidad
+    </button>
+
+</form>
+
+<hr style="margin:25px 0;">
+
+<table>
+
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Especialidad</th>
+            <th>Descripción</th>
+            <th>Médicos</th>
+            <th>Estado</th>
+            <th>Acción</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for e in especialidades %}
+
+    <tr>
+
+        <td>#{{ e.id }}</td>
+
+        <td>
+            <strong>{{ e.nombre }}</strong>
+        </td>
+
+        <td>
+            {{ e.descripcion or 'Sin descripción' }}
+        </td>
+
+        <td>
+            {{ e.medicos|length }}
+        </td>
+
+        <td>
+
+            {% if e.activa %}
+                <span class="badge bdis">
+                    Activa
+                </span>
+            {% else %}
+                <span class="badge bnodis">
+                    Inactiva
+                </span>
+            {% endif %}
+
+        </td>
+
+        <td>
+
+    <button
+        type="button"
+        class="tbtn"
+        onclick="abrirEditar(
+            {{ e.id }},
+            '{{ e.nombre }}',
+            '{{ e.descripcion or '' }}'
+        )">
+        ✏️ Editar
+    </button>
+
+    <button
+        type="button"
+        class="tbtn"
+        onclick="toggleEspecialidad({{ e.id }})">
+
+        {% if e.activa %}
+            Desactivar
+        {% else %}
+            Activar
+        {% endif %}
+    </button>
+
+</td>
+
+    </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+<div id="modalEditar" class="modal">
+
+    <div class="modal-content">
+
+        <h3>Editar Especialidad</h3>
+
+        <form id="formEditar" method="POST">
+
+            <div class="form-group">
+                <label>Nombre</label>
+                <input
+                    type="text"
+                    name="nombre"
+                    id="editNombre"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Descripción</label>
+                <textarea
+                    name="descripcion"
+                    id="editDescripcion"></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary">
+                Guardar cambios
+            </button>
+
+            <button
+                type="button"
+                class="tbtn"
+                onclick="cerrarModal()">
+                Cancelar
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+</div>
+<div id="pane-horarios" class="tab-pane">
+
+    <div class="table-header">
+        <div class="table-title">
+            🕒 Gestión de Horarios Médicos
+        </div>
+    </div>
+
+    <form
+        method="POST"
+        action="/admin/horario/crear"
+        class="doctor-form"
+        onsubmit="localStorage.setItem('adminTab','horarios')">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Médico</label>
+
+                <select name="medico_id" required>
+
+                    <option value="">
+                        Seleccione un médico
+                    </option>
+
+                    {% for m in medicos %}
+                    <option value="{{ m.id }}">
+                        Dr. {{ m.nombre }} {{ m.apellido }}
+                    </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Día</label>
+
+                <select name="dia_semana" required>
+
+                    <option value="0">Lunes</option>
+                    <option value="1">Martes</option>
+                    <option value="2">Miércoles</option>
+                    <option value="3">Jueves</option>
+                    <option value="4">Viernes</option>
+                    <option value="5">Sábado</option>
+                    <option value="6">Domingo</option>
+
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Hora inicio</label>
+
+                <input
+                    type="time"
+                    name="hora_inicio"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Hora fin</label>
+
+                <input
+                    type="time"
+                    name="hora_fin"
+                    required>
+            </div>
+
+        </div>
+
+        <button
+            type="submit"
+            class="btn-primary">
+
+            Guardar Horario
+
+        </button>
+
+    </form>
+<hr style="margin:25px 0;">
+
+<table>
+
+    <thead>
+
+        <tr>
+
+            <th>ID</th>
+            <th>Médico</th>
+            <th>Día</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Acciones</th>
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+    {% for h in horarios %}
+
+    <tr>
+
+        <td>#{{ h.id }}</td>
+
+        <td>
+            Dr. {{ h.medico.nombre }}
+            {{ h.medico.apellido }}
+        </td>
+
+        <td>
+
+            {% set dias = [
+                'Lunes',
+                'Martes',
+                'Miércoles',
+                'Jueves',
+                'Viernes',
+                'Sábado',
+                'Domingo'
+            ] %}
+
+            {{ dias[h.dia_semana] }}
+
+        </td>
+
+        <td>
+            {{ h.hora_inicio.strftime('%H:%M') }}
+        </td>
+
+        <td>
+            {{ h.hora_fin.strftime('%H:%M') }}
+        </td>
+
+        <td>
+
+            <button
+                type="button"
+                class="tbtn"
+                onclick="abrirEditarHorario(
+                    {{ h.id }},
+                    '{{ h.medico_id }}',
+                    '{{ h.dia_semana }}',
+                    '{{ h.hora_inicio.strftime('%H:%M') }}',
+                    '{{ h.hora_fin.strftime('%H:%M') }}'
+                )">
+
+                ✏️ Editar
+
+            </button>
+
+            <form
+                method="POST"
+                action="/admin/horario/eliminar/{{ h.id }}"
+                style="display:inline;">
+
+                <button
+                    type="submit"
+                    class="tbtn tbtn-on">
+
+                    🗑 Eliminar
+
+                </button>
+
+            </form>
+
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+<div id="modalHorario" class="modal">
+
+    <div class="modal-content">
+
+        <h3>Editar Horario</h3>
+
+        <form id="formEditarHorario" method="POST">
+
+            <div class="form-group">
+                <label>Día</label>
+
+                <select
+                    name="dia_semana"
+                    id="editDia">
+
+                    <option value="0">Lunes</option>
+                    <option value="1">Martes</option>
+                    <option value="2">Miércoles</option>
+                    <option value="3">Jueves</option>
+                    <option value="4">Viernes</option>
+                    <option value="5">Sábado</option>
+                    <option value="6">Domingo</option>
+
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Hora inicio</label>
+
+                <input
+                    type="time"
+                    name="hora_inicio"
+                    id="editInicio">
+            </div>
+
+            <div class="form-group">
+                <label>Hora fin</label>
+
+                <input
+                    type="time"
+                    name="hora_fin"
+                    id="editFin">
+            </div>
+
+            <button
+                type="submit"
+                class="btn-primary">
+
+                Guardar cambios
+
+            </button>
+
+            <button
+                type="button"
+                class="tbtn"
+                onclick="cerrarHorario()">
+
+                Cancelar
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+</div>
+
 </div>
 {% endblock %}
 
@@ -149,7 +681,37 @@ function switchTab(name, btn) {
   document.getElementById('pane-' + name).classList.add('active');
   btn.classList.add('active');
 }
+document.addEventListener('DOMContentLoaded', () => {
 
+    const savedTab = localStorage.getItem('adminTab');
+
+    if(savedTab){
+
+        document.querySelectorAll('.tab-pane')
+            .forEach(p => p.classList.remove('active'));
+
+        document.querySelectorAll('.stab')
+            .forEach(b => b.classList.remove('active'));
+
+        const pane = document.getElementById('pane-' + savedTab);
+
+        if(pane){
+
+            pane.classList.add('active');
+
+            const botones = document.querySelectorAll('.stab');
+
+            botones.forEach(b => {
+
+                if(b.getAttribute('onclick').includes(savedTab)){
+                    b.classList.add('active');
+                }
+
+            });
+        }
+    }
+
+});
 /* ── Búsqueda live ── */
 function filtrarTabla(tableId, q, countId) {
   const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
@@ -188,6 +750,69 @@ async function toggleMedico(id, btn) {
       btn.className = 'tbtn tbtn-on'; btn.textContent = 'Activar';
     }
   }
+}
+async function toggleEspecialidad(id){
+
+    localStorage.setItem(
+        'adminTab',
+        'especialidades'
+    );
+
+    const r = await fetch(
+        `/admin/toggle-especialidad/${id}`,
+        { method:'POST' }
+    );
+
+    const data = await r.json();
+
+    if(data.ok){
+        location.reload();
+    }
+}
+function abrirEditar(id, nombre, descripcion){
+
+    document.getElementById('editNombre').value = nombre;
+    document.getElementById('editDescripcion').value = descripcion;
+
+    document.getElementById('formEditar').action =
+        `/admin/especialidad/editar/${id}`;
+
+    document.getElementById('modalEditar').style.display =
+        'block';
+}
+
+function cerrarModal(){
+
+    document.getElementById('modalEditar').style.display =
+        'none';
+}
+function abrirEditarHorario(
+    id,
+    medico,
+    dia,
+    inicio,
+    fin
+){
+
+    document.getElementById('editDia').value = dia;
+    document.getElementById('editInicio').value = inicio;
+    document.getElementById('editFin').value = fin;
+
+    document.getElementById(
+        'formEditarHorario'
+    ).action =
+        '/admin/horario/editar/' + id;
+
+    document.getElementById(
+        'modalHorario'
+    ).style.display = 'block';
+}
+
+function cerrarHorario(){
+
+    document.getElementById(
+        'modalHorario'
+    ).style.display = 'none';
 }
 </script>
 {% endblock %}

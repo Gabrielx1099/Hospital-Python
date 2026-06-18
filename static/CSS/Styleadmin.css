@@ -111,3 +111,69 @@ tbody tr:last-child { border-bottom: none; }
 .tbtn:hover { opacity: .75; }
 .tbtn-off { background:#fef2f2; color:#991b1b; border-color:#fca5a5; }
 .tbtn-on  { background:#f0fdf4; color:#166534; border-color:#86efac; }
+.doctor-form{
+    padding:25px;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:18px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+.form-group label{
+    margin-bottom:6px;
+    font-size:.85rem;
+    font-weight:600;
+    color:#334155;
+}
+
+.form-group input,
+.form-group select{
+    padding:11px;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    font-size:.9rem;
+}
+
+.form-group input:focus,
+.form-group select:focus{
+    outline:none;
+    border-color:#2563eb;
+}
+
+.save-btn{
+    margin-top:20px;
+    padding:12px 24px;
+    border:none;
+    border-radius:10px;
+    background:#2563eb;
+    color:white;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.save-btn:hover{
+    background:#1d4ed8;
+}
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    z-index:9999;
+}
+
+.modal-content{
+    background:#fff;
+    width:500px;
+    max-width:90%;
+    margin:80px auto;
+    padding:20px;
+    border-radius:10px;
+}

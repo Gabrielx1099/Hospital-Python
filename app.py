@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'hospital_lanfranco_secret_2024'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/hospital_lanfranco'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:25Defebrero?@localhost:3306/hospital_lanfranco'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -48,15 +48,67 @@ class Especialidad(db.Model):
     activa = db.Column(db.Boolean, default=True)
     medicos = db.relationship('Medico', backref='especialidad', lazy=True)
 
+
 class Medico(db.Model):
     __tablename__ = 'medicos'
+
     id = db.Column(db.Integer, primary_key=True)
+
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey('usuarios.id'),
+        unique=True,
+        nullable=False
+    )
+
     nombre = db.Column(db.String(150), nullable=False)
     apellido = db.Column(db.String(150), nullable=False)
     cmp = db.Column(db.String(20), unique=True)
-    especialidad_id = db.Column(db.Integer, db.ForeignKey('especialidades.id'))
+
+    especialidad_id = db.Column(
+        db.Integer,
+        db.ForeignKey('especialidades.id')
+    )
+
     disponible = db.Column(db.Boolean, default=True)
-    citas = db.relationship('Cita', backref='medico', lazy=True)
+
+    citas = db.relationship(
+        'Cita',
+        backref='medico',
+        lazy=True
+    )
+
+    horarios = db.relationship(
+        'HorarioMedico',
+        backref='medico',
+        lazy=True
+    )
+
+class HorarioMedico(db.Model):
+    __tablename__ = 'horarios_medicos'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    medico_id = db.Column(
+        db.Integer,
+        db.ForeignKey('medicos.id'),
+        nullable=False
+    )
+
+    dia_semana = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    hora_inicio = db.Column(
+        db.Time,
+        nullable=False
+    )
+
+    hora_fin = db.Column(
+        db.Time,
+        nullable=False
+    )
 
 class Cita(db.Model):
     __tablename__ = 'citas'
@@ -174,16 +226,34 @@ def registro():
 
 @app.route('/login', methods=['GET','POST'])
 def login():
-    if current_user.is_authenticated: return redirect(url_for('dashboard'))
-    if request.method=='POST':
-        email=request.form.get('email','').strip()
-        password=request.form.get('password','')
-        u=Usuario.query.filter_by(email=email).first()
+
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+
+        email = request.form.get('email','').strip()
+        password = request.form.get('password','')
+
+        u = Usuario.query.filter_by(email=email).first()
+
         if u and check_password_hash(u.password,password):
+
             login_user(u)
-            flash(f'Bienvenido, {u.nombre}!','success')
-            return redirect(request.args.get('next') or url_for('dashboard'))
-        flash('Correo o contrasena incorrectos.','error')
+
+            flash(f'Bienvenido, {u.nombre}!', 'success')
+
+            if u.rol == 'admin':
+                return redirect(url_for('admin'))
+
+            elif u.rol == 'doctor':
+                return redirect(url_for('doctor_dashboard'))
+
+            else:
+                return redirect(url_for('dashboard'))
+
+        flash('Correo o contrasena incorrectos.', 'error')
+
     return render_template('login.html')
 
 @app.route('/logout')
@@ -257,15 +327,18 @@ def admin():
     if current_user.rol != 'admin':
         flash('Acceso restringido.', 'error')
         return redirect(url_for('dashboard'))
-    return render_template('admin.html',
-        total_usuarios=Usuario.query.count(),
-        total_citas=Cita.query.count(),
-        citas_hoy=Cita.query.filter_by(fecha=date.today()).count(),
-        citas_pendientes=Cita.query.filter_by(estado='pendiente').count(),
-        citas_recientes=Cita.query.order_by(Cita.creado_en.desc()).limit(15).all(),
-        pacientes=Usuario.query.filter_by(rol='paciente').order_by(Usuario.creado_en.desc()).all(),
-        medicos=Medico.query.order_by(Medico.apellido).all()
-    )
+    return render_template(
+    'admin.html',
+    total_usuarios=Usuario.query.count(),
+    total_citas=Cita.query.count(),
+    citas_hoy=Cita.query.filter_by(fecha=date.today()).count(),
+    citas_pendientes=Cita.query.filter_by(estado='pendiente').count(),
+    citas_recientes=Cita.query.order_by(Cita.creado_en.desc()).limit(15).all(),
+    pacientes=Usuario.query.filter_by(rol='paciente').all(),
+    medicos=Medico.query.all(),
+    especialidades=Especialidad.query.all(),
+    horarios=HorarioMedico.query.all()
+)
     
 @app.route('/admin/confirmar/<int:cita_id>', methods=['POST'])
 @login_required
@@ -284,8 +357,235 @@ def toggle_medico(medico_id):
     db.session.commit()
     return jsonify({'ok': True, 'disponible': m.disponible})
     
+@app.route('/admin/doctor/crear', methods=['POST'])
+@login_required
+def crear_doctor():
 
+    if current_user.rol != 'admin':
+        return redirect(url_for('dashboard'))
+
+    if Usuario.query.filter_by(dni=request.form['dni']).first():
+        flash('El DNI ya está registrado.', 'error')
+        return redirect(url_for('admin'))
+
+    if Usuario.query.filter_by(email=request.form['email']).first():
+        flash('El correo ya está registrado.', 'error')
+        return redirect(url_for('admin'))
+
+    usuario = Usuario(
+        nombre=request.form['nombre'],
+        apellido=request.form['apellido'],
+        dni=request.form['dni'],
+        email=request.form['email'],
+        telefono=request.form['telefono'],
+        password=generate_password_hash(request.form['password']),
+        rol='doctor'
+    )
+
+    db.session.add(usuario)
+    db.session.commit()
+
+    medico = Medico(
+        usuario_id=usuario.id,
+        nombre=request.form['nombre'],
+        apellido=request.form['apellido'],
+        cmp=request.form['cmp'],
+        especialidad_id=request.form['especialidad_id']
+    )
+
+    db.session.add(medico)
+    db.session.commit()
+
+    flash('Doctor registrado correctamente', 'success')
+
+    return redirect(url_for('admin'))
+
+@app.route('/doctor')
+@login_required
+def doctor_dashboard():
+
+    if current_user.rol != 'doctor':
+        return redirect(url_for('dashboard'))
+
+    medico = Medico.query.filter_by(
+        usuario_id=current_user.id
+    ).first()
+
+    if not medico:
+        flash(
+            'No se encontró el médico asociado a esta cuenta.',
+            'error'
+        )
+        return redirect(url_for('logout'))
+
+    citas = Cita.query.filter_by(
+        medico_id=medico.id
+    ).order_by(
+        Cita.fecha.asc(),
+        Cita.hora.asc()
+    ).all()
+
+    for cita in citas:
+        cita.dia_semana = cita.fecha.weekday()
+
+    return render_template(
+        'doctor.html',
+        medico=medico,
+        citas=citas
+    )
+
+@app.route('/admin/especialidad/crear', methods=['POST'])
+@login_required
+def crear_especialidad():
+
+    if current_user.rol != 'admin':
+        return redirect(url_for('dashboard'))
+
+    nombre = request.form['nombre'].strip()
+    descripcion = request.form.get('descripcion', '').strip()
+
+    if Especialidad.query.filter_by(nombre=nombre).first():
+        flash('La especialidad ya existe.', 'error')
+        return redirect(url_for('admin'))
+
+    db.session.add(
+        Especialidad(
+            nombre=nombre,
+            descripcion=descripcion,
+            activa=True
+        )
+    )
+
+    db.session.commit()
+
+    flash('Especialidad registrada correctamente.', 'success')
+
+    return redirect(url_for('admin'))
+@app.route('/admin/especialidad/editar/<int:id>', methods=['POST'])
+@login_required
+def editar_especialidad(id):
+
+    if current_user.rol != 'admin':
+        return redirect(url_for('dashboard'))
+
+    esp = Especialidad.query.get_or_404(id)
+
+    esp.nombre = request.form['nombre'].strip()
+    esp.descripcion = request.form.get('descripcion', '').strip()
+
+    db.session.commit()
+
+    flash('Especialidad actualizada correctamente.', 'success')
+
+    return redirect(url_for('admin'))
+
+@app.route('/admin/toggle-especialidad/<int:id>', methods=['POST'])
+@login_required
+def toggle_especialidad(id):
+
+    if current_user.rol != 'admin':
+        return jsonify({'error':'No autorizado'}), 403
+
+    esp = Especialidad.query.get_or_404(id)
+
+    esp.activa = not esp.activa
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'activa': esp.activa
+    })
+
+@app.route('/admin/horario/crear', methods=['POST'])
+@login_required
+def crear_horario():
+
+    if current_user.rol != 'admin':
+        return redirect(url_for('dashboard'))
+
+    horario = HorarioMedico(
+        medico_id=int(request.form['medico_id']),
+        dia_semana=int(request.form['dia_semana']),
+        hora_inicio=datetime.strptime(
+            request.form['hora_inicio'],
+            '%H:%M'
+        ).time(),
+        hora_fin=datetime.strptime(
+            request.form['hora_fin'],
+            '%H:%M'
+        ).time()
+    )
+
+    db.session.add(horario)
+    db.session.commit()
+
+    flash(
+        'Horario registrado correctamente.',
+        'success'
+    )
+
+    return redirect(url_for('admin'))
+
+@app.route(
+    '/admin/horario/eliminar/<int:id>',
+    methods=['POST']
+)
+@login_required
+def eliminar_horario(id):
+
+    if current_user.rol != 'admin':
+        return redirect(url_for('dashboard'))
+
+    horario = HorarioMedico.query.get_or_404(id)
+
+    db.session.delete(horario)
+
+    db.session.commit()
+
+    flash(
+        'Horario eliminado correctamente',
+        'success'
+    )
+
+    return redirect(url_for('admin'))
+@app.route(
+    '/admin/horario/editar/<int:id>',
+    methods=['POST']
+)
+@login_required
+def editar_horario(id):
+
+    if current_user.rol != 'admin':
+        return redirect(url_for('dashboard'))
+
+    horario = HorarioMedico.query.get_or_404(id)
+
+    horario.dia_semana = int(
+        request.form['dia_semana']
+    )
+
+    horario.hora_inicio = datetime.strptime(
+        request.form['hora_inicio'],
+        '%H:%M'
+    ).time()
+
+    horario.hora_fin = datetime.strptime(
+        request.form['hora_fin'],
+        '%H:%M'
+    ).time()
+
+    db.session.commit()
+
+    flash(
+        'Horario actualizado correctamente',
+        'success'
+    )
+
+    return redirect(url_for('admin'))
 if __name__=='__main__':
     with app.app_context():
         inicializar_db()
     app.run(debug=True,port=5000)
+
+
