@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Mi Panel — Hospital Lanfranco La Hoz{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/Styledashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='CSS/Styledashboard.css') }}">
 {% endblock %}
 {% block content %}
 <div class="dash-wrap">
@@ -23,19 +23,31 @@
     {% set canceladas = citas|selectattr('estado','equalto','cancelada')|list|length %}
     <div class="dash-stat">
       <div class="dash-stat-icon azul">📋</div>
-      <div><div class="dash-stat-num">{{ total }}</div><div class="dash-stat-label">Total de Citas</div></div>
+      <div>
+        <div class="dash-stat-num">{{ total }}</div>
+        <div class="dash-stat-label">Total de Citas</div>
+      </div>
     </div>
     <div class="dash-stat">
       <div class="dash-stat-icon naranja">⏳</div>
-      <div><div class="dash-stat-num">{{ pendientes }}</div><div class="dash-stat-label">Pendientes</div></div>
+      <div>
+        <div class="dash-stat-num">{{ pendientes }}</div>
+        <div class="dash-stat-label">Pendientes</div>
+      </div>
     </div>
     <div class="dash-stat">
       <div class="dash-stat-icon verde">✅</div>
-      <div><div class="dash-stat-num">{{ confirmadas }}</div><div class="dash-stat-label">Confirmadas</div></div>
+      <div>
+        <div class="dash-stat-num">{{ confirmadas }}</div>
+        <div class="dash-stat-label">Confirmadas</div>
+      </div>
     </div>
     <div class="dash-stat">
       <div class="dash-stat-icon" style="background:#fee2e2;">❌</div>
-      <div><div class="dash-stat-num">{{ canceladas }}</div><div class="dash-stat-label">Canceladas</div></div>
+      <div>
+        <div class="dash-stat-num">{{ canceladas }}</div>
+        <div class="dash-stat-label">Canceladas</div>
+      </div>
     </div>
   </div>
 
@@ -43,14 +55,22 @@
   <div class="citas-section">
     <div class="citas-header">
       <div class="citas-title"><i class="fas fa-list"></i> &nbsp;Mis Citas Médicas</div>
-      <a href="{{ url_for('solicitar_cita') }}" class="btn-primary" style="padding:8px 18px;font-size:.85rem;">+ Nueva Cita</a>
+      <a href="{{ url_for('solicitar_cita') }}" class="btn-primary" style="padding:8px 18px;font-size:.85rem;">+ Nueva
+        Cita</a>
     </div>
     {% if citas %}
     <div style="overflow-x:auto;">
       <table>
         <thead>
           <tr>
-            <th>#</th><th>Especialidad</th><th>Médico</th><th>Fecha</th><th>Hora</th><th>Estado</th><th>Tipo</th><th>Acción</th>
+            <th>#</th>
+            <th>Especialidad</th>
+            <th>Médico</th>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Estado</th>
+            <th>Tipo</th>
+            <th>Acción</th>
           </tr>
         </thead>
         <tbody>
@@ -62,18 +82,29 @@
             <td>{{ c.fecha.strftime('%d/%m/%Y') }}</td>
             <td><i class="fas fa-clock" style="color:#94a3b8;"></i> {{ c.hora }}</td>
             <td><span class="badge {{ c.estado }}">
-              {% if c.estado == 'pendiente' %}⏳{% elif c.estado == 'confirmada' %}✅{% else %}❌{% endif %}
-              {{ c.estado|capitalize }}
-            </span></td>
+                {% if c.estado == 'pendiente' %}⏳{% elif c.estado == 'confirmada' %}✅{% else %}❌{% endif %}
+                {{ c.estado|capitalize }}
+              </span></td>
             <td><span class="badge {{ c.tipo }}">
-              {% if c.tipo == 'voz' %}<i class="fas fa-microphone"></i>{% else %}<i class="fas fa-keyboard"></i>{% endif %}
-              {{ c.tipo|capitalize }}
-            </span></td>
+                {% if c.tipo == 'voz' %}<i class="fas fa-microphone"></i>{% else %}<i class="fas fa-keyboard"></i>{%
+                endif %}
+                {{ c.tipo|capitalize }}
+              </span></td>
             <td>
               {% if c.estado != 'cancelada' %}
-              <form method="POST" action="{{ url_for('cancelar_cita', cita_id=c.id) }}" onsubmit="return confirm('¿Cancelar esta cita?')">
-                <button type="submit" class="btn-danger" style="font-size:.78rem;padding:6px 12px;">Cancelar</button>
-              </form>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button type="button" class="btn-primary"
+                  style="font-size:.78rem;padding:6px 12px;background:var(--azul-medio);"
+                  onclick="abrirReprogramar({{ c.id }}, {{ c.medico_id }}, 'Dr. {{ c.medico.nombre }} {{ c.medico.apellido }}', '{{ c.fecha.isoformat() }}', '{{ c.hora }}')"
+                  aria-label="Reprogramar cita #{{ c.id }}">
+                  Reprogramar
+                </button>
+                <form method="POST" action="{{ url_for('cancelar_cita', cita_id=c.id) }}"
+                  onsubmit="return confirm('¿Cancelar esta cita?')" style="margin:0;">
+                  <button type="submit" class="btn-danger" style="font-size:.78rem;padding:6px 12px;"
+                    aria-label="Cancelar cita #{{ c.id }}">Cancelar</button>
+                </form>
+              </div>
               {% else %}
               <span style="color:#94a3b8;font-size:.82rem;">—</span>
               {% endif %}
@@ -87,9 +118,114 @@
     <div class="empty-state">
       <div class="icon">📅</div>
       <p>No tienes citas registradas aún.</p>
-      <a href="{{ url_for('solicitar_cita') }}" class="btn-primary"><i class="fas fa-calendar-plus"></i> Solicitar Primera Cita</a>
+      <a href="{{ url_for('solicitar_cita') }}" class="btn-primary"><i class="fas fa-calendar-plus"></i> Solicitar
+        Primera Cita</a>
     </div>
     {% endif %}
   </div>
 </div>
+
+<!-- Modal de Reprogramación -->
+<div id="modalReprogramar" class="modal">
+  <div class="modal-content">
+    <h3 style="margin-bottom:8px;color:var(--azul);">Reprogramar Cita</h3>
+    <p style="margin-bottom: 16px; font-size: 0.9rem; color: #64748b;">
+      Médico: <strong id="reprog-medico-nombre">Dr. —</strong>
+    </p>
+    <form id="formReprogramar" method="POST">
+      <input type="hidden" name="cita_id" id="reprog-cita-id">
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label for="reprog-fecha">Nueva Fecha</label>
+        <input type="date" id="reprog-fecha" name="fecha" required onchange="cargarHorariosDisponibles(this.value)">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 18px;">
+        <label for="reprog-hora">Nuevo Horario</label>
+        <select id="reprog-hora" name="hora" required>
+          <option value="">Seleccione una fecha primero</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+        <button type="submit" class="btn-primary" style="padding:10px 20px;">Guardar cambios</button>
+        <button type="button" class="btn-danger" style="background:#64748b;padding:10px 20px;"
+          onclick="cerrarReprogramar()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let currentMedicoId = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const reprogFecha = document.getElementById('reprog-fecha');
+    if (reprogFecha) {
+      reprogFecha.min = todayStr;
+    }
+  });
+
+  function abrirReprogramar(citaId, medicoId, medicoNombre, fechaActual, horaActual) {
+    document.getElementById('reprog-cita-id').value = citaId;
+    document.getElementById('reprog-medico-nombre').textContent = medicoNombre;
+
+    const fechaInput = document.getElementById('reprog-fecha');
+    fechaInput.value = fechaActual;
+    currentMedicoId = medicoId;
+
+    // Configurar acción del formulario dinámicamente
+    document.getElementById('formReprogramar').action = `/reprogramar-cita/${citaId}`;
+
+    // Cargar horas
+    cargarHorariosDisponibles(fechaActual, horaActual);
+
+    // Mostrar modal
+    document.getElementById('modalReprogramar').style.display = 'block';
+  }
+
+  async function cargarHorariosDisponibles(fecha, horaPreseleccionada = null) {
+    const selectHora = document.getElementById('reprog-hora');
+    selectHora.innerHTML = '<option value="">Cargando horarios...</option>';
+    selectHora.disabled = true;
+
+    if (!fecha || !currentMedicoId) return;
+
+    try {
+      const response = await fetch(`/api/horarios/${currentMedicoId}/${fecha}`);
+      const horarios = await response.json();
+
+      selectHora.innerHTML = '';
+      if (horarios.length === 0 && !horaPreseleccionada) {
+        selectHora.innerHTML = '<option value="">No hay horarios disponibles</option>';
+        return;
+      }
+
+      // Si la hora preseleccionada no está, la agregamos y ordenamos
+      if (horaPreseleccionada && !horarios.includes(horaPreseleccionada)) {
+        horarios.push(horaPreseleccionada);
+        horarios.sort();
+      }
+
+      horarios.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.textContent = h;
+        if (h === horaPreseleccionada) {
+          opt.selected = true;
+        }
+        selectHora.appendChild(opt);
+      });
+      selectHora.disabled = false;
+    } catch (e) {
+      console.error('Error cargando horarios:', e);
+      selectHora.innerHTML = '<option value="">Error al cargar horarios</option>';
+    }
+  }
+
+  function cerrarReprogramar() {
+    document.getElementById('modalReprogramar').style.display = 'none';
+  }
+</script>
 {% endblock %}

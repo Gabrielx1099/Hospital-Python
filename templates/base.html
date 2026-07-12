@@ -1,59 +1,64 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Hospital Carlos Lanfranco La Hoz{% endblock %}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/Stylebase.css') }}">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='CSS/Stylebase.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='CSS/Styleaccesibilidad.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
+
 <body>
 
-<nav>
-  <div class="nav-inner">
-    <a href="{{ url_for('index') }}" class="nav-logo">
-      <div class="logo-circle"><i class="fas fa-hospital"></i></div>
-      <div class="logo-text">HOSPITAL CARLOS<br>LANFRANCO LA HOZ</div>
-    </a>
-    <div class="nav-links">
-      <a href="{{ url_for('index') }}">Inicio</a>
-      <a href="{{ url_for('index') }}#especialidades">Especialidades</a>
-      <a href="{{ url_for('index') }}#nosotros">Nosotros</a>
-      <a href="{{ url_for('index') }}#contacto">Contacto</a>
-      {% if current_user.is_authenticated %}
+  <nav>
+    <div class="nav-inner">
+      <a href="{{ url_for('index') }}" class="nav-logo">
+        <div class="logo-circle"><i class="fas fa-hospital"></i></div>
+        <div class="logo-text">HOSPITAL CARLOS<br>LANFRANCO LA HOZ</div>
+      </a>
+      <div class="nav-links">
+        <a href="{{ url_for('index') }}">Inicio</a>
+        <a href="{{ url_for('index') }}#especialidades">Especialidades</a>
+        <a href="{{ url_for('index') }}#nosotros">Nosotros</a>
+        <a href="{{ url_for('index') }}#contacto">Contacto</a>
+        {% if current_user.is_authenticated %}
 
 
         {% if current_user.rol == 'paciente' %}
 
-            <a href="{{ url_for('solicitar_cita') }}" class="btn-nav">
-                <i class="fas fa-calendar-plus"></i>
-                Solicitar Cita
-            </a>
+        <a href="{{ url_for('solicitar_cita') }}" class="btn-nav">
+          <i class="fas fa-calendar-plus"></i>
+          Solicitar Cita
+        </a>
 
-            <a href="{{ url_for('dashboard') }}">
-                Mi Panel
-            </a>
+        <a href="{{ url_for('dashboard') }}">
+          Mi Panel
+        </a>
 
         {% elif current_user.rol == 'doctor' %}
 
-            <a href="{{ url_for('doctor_dashboard') }}">
-                <i class="fas fa-calendar-check"></i>
-                Mis Citas
-            </a>
+        <a href="{{ url_for('doctor_dashboard') }}">
+          <i class="fas fa-calendar-check"></i>
+          Mis Citas
+        </a>
 
         {% elif current_user.rol == 'admin' %}
 
-            <a href="{{ url_for('admin') }}">
-                <i class="fas fa-cog"></i>
-                Administración
-            </a>
+        <a href="{{ url_for('admin') }}">
+          <i class="fas fa-cog"></i>
+          Administración
+        </a>
 
         {% endif %}
 
         <a href="{{ url_for('logout') }}" class="btn-nav-outline">
-            Salir
+          Salir
         </a>
 
 
@@ -61,124 +66,158 @@
 
 
         <a href="{{ url_for('login') }}" class="btn-nav-outline">
-            Iniciar Sesión
+          Iniciar Sesión
         </a>
 
         <a href="{{ url_for('registro') }}" class="btn-nav">
-            Registrarse
+          Registrarse
         </a>
 
 
         {% endif %}
 
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<div class="flash-container">
-  {% with messages = get_flashed_messages(with_categories=true) %}
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
-      <div class="flash {{ category }}">
-        {% if category == 'success' %}<i class="fas fa-check-circle"></i>
-        {% elif category == 'error' %}<i class="fas fa-exclamation-circle"></i>
-        {% else %}<i class="fas fa-info-circle"></i>{% endif %}
-        {{ message }}
-      </div>
+    <div class="flash {{ category }}" role="alert">
+      {% if category == 'success' %}<i class="fas fa-check-circle"></i>
+      {% elif category == 'error' %}<i class="fas fa-exclamation-circle"></i>
+      {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+      {{ message }}
+    </div>
     {% endfor %}
-  {% endwith %}
-</div>
+    {% endwith %}
+  </div>
 
-{% block content %}{% endblock %}
+  {% block content %}{% endblock %}
 
-<footer>
-  <div class="footer-top">
+  <footer>
+    <div class="footer-top">
 
-    <div class="footer-col">
-      <h4>
-        <i class="fas fa-hospital"></i>
-        Hospital Carlos Lanfranco La Hoz
-      </h4>
+      <div class="footer-col">
+        <h4>
+          <i class="fas fa-hospital"></i>
+          Hospital Carlos Lanfranco La Hoz
+        </h4>
 
+        <p>
+          Hospital público de referencia en Lima Norte, comprometido con brindar atención médica integral, oportuna y de
+          calidad a la comunidad.
+        </p>
+
+        <div class="footer-social" style="margin-top:16px;">
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h4>
+          <i class="fas fa-map-marker-alt"></i>
+          Ubicación
+        </h4>
+
+        <p>
+          Av. Sáenz Peña Cdra. 6 S/N<br>
+          Puente Piedra, Lima, Perú<br>
+          Ref: Km 31.5 Panamericana Norte
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4>
+          <i class="fas fa-phone"></i>
+          Contacto
+        </h4>
+
+        <p>
+          Central Telefónica:<br>
+          (01) 548-2010<br>
+          (01) 548-5334
+        </p>
+
+        <p style="margin-top:10px;">
+          Emergencias:<br>
+          548-3935
+        </p>
+
+        <p style="margin-top:8px;color:#fbbf24;font-weight:700;font-size:1rem;">
+          🆘 Atención de Emergencias las 24 horas
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4>
+          <i class="fas fa-clock"></i>
+          Horarios
+        </h4>
+
+        <p>
+          Consulta Externa:<br>
+          Lunes a Viernes:<br>
+          7:00 am – 7:00 pm
+        </p>
+
+        <p style="margin-top:8px;">
+          Sábados:<br>
+          7:00 am – 1:00 pm
+        </p>
+
+        <p style="margin-top:8px;">
+          Emergencias:<br>
+          Atención 24/7
+        </p>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
       <p>
-        Hospital público de referencia en Lima Norte, comprometido con brindar atención médica integral, oportuna y de calidad a la comunidad.
+        © 2026 Hospital Carlos Lanfranco La Hoz — Puente Piedra, Lima, Perú.
+        Todos los derechos reservados.
       </p>
+    </div>
+  </footer>
 
-      <div class="footer-social" style="margin-top:16px;">
-        <a href="#"><i class="fab fa-facebook-f"></i></a>
-        <a href="#"><i class="fab fa-twitter"></i></a>
-        <a href="#"><i class="fab fa-instagram"></i></a>
-        <a href="#"><i class="fab fa-youtube"></i></a>
+  <!-- Panel de accesibilidad -->
+  <button type="button" class="a11y-toggle" id="a11y-toggle-btn" aria-label="Abrir panel de accesibilidad"
+    title="Accesibilidad">
+    <i class="fas fa-universal-access" aria-hidden="true"></i>
+  </button>
+  <div class="a11y-panel" id="a11y-panel" role="dialog" aria-label="Opciones de accesibilidad">
+    <h3><i class="fas fa-universal-access" aria-hidden="true"></i> Accesibilidad</h3>
+    <div class="a11y-opcion">
+      <span class="a11y-label">Alto contraste</span>
+      <button type="button" class="a11y-switch" id="a11y-contraste-btn" aria-pressed="false">Activar alto
+        contraste</button>
+    </div>
+    <div class="a11y-opcion">
+      <span class="a11y-label">Tamaño de fuente</span>
+      <div class="a11y-fuente-btns">
+        <button type="button" data-nivel="0" class="activo" aria-label="Fuente normal">A</button>
+        <button type="button" data-nivel="1" aria-label="Fuente grande">A+</button>
+        <button type="button" data-nivel="2" aria-label="Fuente extra grande">A++</button>
       </div>
     </div>
-
-    <div class="footer-col">
-      <h4>
-        <i class="fas fa-map-marker-alt"></i>
-        Ubicación
-      </h4>
-
-      <p>
-        Av. Sáenz Peña Cdra. 6 S/N<br>
-        Puente Piedra, Lima, Perú<br>
-        Ref: Km 31.5 Panamericana Norte
-      </p>
+    <div class="a11y-opcion">
+      <span class="a11y-label">Lector de pantalla</span>
+      <button type="button" class="a11y-switch" id="a11y-tts-btn" aria-pressed="false">Activar lector de
+        pantalla</button>
     </div>
-
-    <div class="footer-col">
-      <h4>
-        <i class="fas fa-phone"></i>
-        Contacto
-      </h4>
-
-      <p>
-        Central Telefónica:<br>
-        (01) 548-2010<br>
-        (01) 548-5334
-      </p>
-
-      <p style="margin-top:10px;">
-        Emergencias:<br>
-        548-3935
-      </p>
-
-      <p style="margin-top:8px;color:#fbbf24;font-weight:700;font-size:1rem;">
-        🆘 Atención de Emergencias las 24 horas
-      </p>
+    <div class="a11y-opcion">
+      <span class="a11y-label">Subrayar enlaces</span>
+      <button type="button" class="a11y-switch" id="a11y-subrayar-btn" aria-pressed="false">Subrayar enlaces</button>
     </div>
-
-    <div class="footer-col">
-      <h4>
-        <i class="fas fa-clock"></i>
-        Horarios
-      </h4>
-
-      <p>
-        Consulta Externa:<br>
-        Lunes a Viernes:<br>
-        7:00 am – 7:00 pm
-      </p>
-
-      <p style="margin-top:8px;">
-        Sábados:<br>
-        7:00 am – 1:00 pm
-      </p>
-
-      <p style="margin-top:8px;">
-        Emergencias:<br>
-        Atención 24/7
-      </p>
-    </div>
-
   </div>
 
-  <div class="footer-bottom">
-    <p>
-      © 2026 Hospital Carlos Lanfranco La Hoz — Puente Piedra, Lima, Perú.
-      Todos los derechos reservados.
-    </p>
-  </div>
-</footer>
-
-{% block extra_js %}{% endblock %}
+  <script src="{{ url_for('static', filename='JS/accesibilidad.js') }}" defer></script>
+  {% block extra_js %}{% endblock %}
 </body>
+
 </html>

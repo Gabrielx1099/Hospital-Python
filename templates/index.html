@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Iniciar Sesión — Hospital Lanfranco La Hoz{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/Styleindex.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='CSS/Styleindex.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -14,16 +14,27 @@
       <p class="hero-sub">Tu Salud es Nuestra Prioridad.<br>Atención de calidad en Puente Piedra y Lima Norte.</p>
       <div class="hero-btns">
         {% if current_user.is_authenticated %}
-          <a href="{{ url_for('solicitar_cita') }}" class="hero-cta"><i class="fas fa-calendar-plus"></i> Solicitar Cita Ahora</a>
+        <a href="{{ url_for('solicitar_cita') }}" class="hero-cta"><i class="fas fa-calendar-plus"></i> Solicitar Cita
+          Ahora</a>
         {% else %}
-          <a href="{{ url_for('registro') }}" class="hero-cta"><i class="fas fa-calendar-plus"></i> Solicitar Cita Ahora</a>
-          <a href="{{ url_for('login') }}" class="hero-cta-sec"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
+        <a href="{{ url_for('registro') }}" class="hero-cta"><i class="fas fa-calendar-plus"></i> Solicitar Cita
+          Ahora</a>
+        <a href="{{ url_for('login') }}" class="hero-cta-sec"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
         {% endif %}
       </div>
       <div class="hero-stats">
-        <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Especialidades</div></div>
-        <div class="stat"><div class="stat-num">200+</div><div class="stat-label">Médicos</div></div>
-        <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Urgencias</div></div>
+        <div class="stat">
+          <div class="stat-num">50+</div>
+          <div class="stat-label">Especialidades</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">200+</div>
+          <div class="stat-label">Médicos</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">24/7</div>
+          <div class="stat-label">Urgencias</div>
+        </div>
       </div>
     </div>
     <div></div>
@@ -35,14 +46,19 @@
   <div class="ia-banner-inner">
     <div class="ia-badge"><i class="fas fa-microphone-alt"></i> Disponible — Asistente de Voz</div>
     <h2 class="ia-title">Citas Médicas con Inteligencia Artificial</h2>
-    <p class="ia-desc">Reserva tu cita hablando con nuestro asistente virtual. Di la especialidad que necesitas y el sistema te guía al formulario para elegir fecha y hora.</p>
+    <p class="ia-desc">Reserva tu cita hablando con nuestro asistente virtual. Di la especialidad que necesitas y el
+      sistema te guía al formulario para elegir fecha y hora.</p>
     <div class="ia-features">
-      <div class="ia-feat"><i class="fas fa-microphone" style="color:#60a5fa;"></i> Reconocimiento de voz en tiempo real</div>
+      <div class="ia-feat"><i class="fas fa-microphone" style="color:#60a5fa;"></i> Reconocimiento de voz en tiempo real
+      </div>
       <div class="ia-feat"><i class="fas fa-brain" style="color:#a78bfa;"></i> IA que entiende tus síntomas</div>
-      <div class="ia-feat"><i class="fas fa-calendar-check" style="color:#34d399;"></i> Agenda automática sin clicks</div>
+      <div class="ia-feat"><i class="fas fa-calendar-check" style="color:#34d399;"></i> Agenda automática sin clicks
+      </div>
     </div>
-    <div style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:16px;display:inline-block;">
-      <p style="color:#93c5fd;font-size:.88rem;"><i class="fas fa-microphone"></i> &nbsp;Pruébalo en <strong>Solicitar Cita → Asistente de Voz</strong>. Usa Google Chrome para mejor compatibilidad.</p>
+    <div
+      style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:16px;display:inline-block;">
+      <p style="color:#93c5fd;font-size:.88rem;"><i class="fas fa-microphone"></i> &nbsp;Pruébalo en <strong>Solicitar
+          Cita → Asistente de Voz</strong>. Usa Google Chrome para mejor compatibilidad.</p>
     </div>
   </div>
 </section>
@@ -69,7 +85,8 @@
     <div class="esp-card">
 
       <div class="esp-card-img">
-        <img src="{{ url_for('static', filename='img/' ~ esp.nombre|lower|replace(' ', '_') ~ '.jpg') }}" alt="{{ esp.nombre }}">
+        <img src="{{ url_for('static', filename='img/' ~ esp.nombre|lower|replace(' ', '_') ~ '.jpg') }}"
+          alt="{{ esp.nombre }}">
       </div>
 
       <div class="esp-card-body">
@@ -81,7 +98,8 @@
           {{ esp.descripcion }}
         </div>
 
-        <a href="{{ url_for('solicitar_cita') if current_user.is_authenticated else url_for('login') }}" class="esp-link">
+        <a href="{{ url_for('solicitar_cita') if current_user.is_authenticated else url_for('login') }}"
+          class="esp-link">
           Reservar cita
           <i class="fas fa-arrow-right"></i>
         </a>
@@ -96,51 +114,59 @@
 </section>
 
 <!-- NOSOTROS -->
-        <section class="nosotros" id="nosotros">
-          <div class="nos-inner">
-            <div>
-              <div class="nos-eyebrow">Sobre el hospital</div>
-              <h2 class="nos-title">Hospital de referencia<br>en <span>Lima Norte</span>
-            </h2>
-            <p class="nos-text"> El Hospital Carlos Lanfranco La Hoz es un establecimiento público de salud de nivel II-2, ubicado en Puente Piedra. Brindamos atención médica integral a la comunidad de Lima Norte con tecnología moderna y un equipo de profesionales altamente capacitados. </p>
-            <div class="nos-feats">
-              <div class="nos-feat">
-                <i class="fas fa-hospital">
-                </i> Infraestructura moderna</div>
-                <div class="nos-feat">
-                  <i class="fas fa-user-md">
-                  </i> Médicos especializados</div>
-                  <div class="nos-feat">
-                    <i class="fas fa-flask">
-                    </i> Laboratorio clínico</div>
-                    <div class="nos-feat">
-                      <i class="fas fa-ambulance">
-                      </i> Emergencias 24/7</div>
-                      <div class="nos-feat">
-                        <i class="fas fa-pills">
-                        </i> Farmacia en sede</div>
-                        <div class="nos-feat">
-                          <i class="fas fa-calendar-check">
-                          </i> Citas en línea</div>
-                        </div>
-                      </div>
-                      <!-- SLOT IMAGEN NOSOTROS -->
-                     <div class="nos-img-area">
+<section class="nosotros" id="nosotros">
+  <div class="nos-inner">
+    <div>
+      <div class="nos-eyebrow">Sobre el hospital</div>
+      <h2 class="nos-title">Hospital de referencia<br>en <span>Lima Norte</span>
+      </h2>
+      <p class="nos-text"> El Hospital Carlos Lanfranco La Hoz es un establecimiento público de salud de nivel II-2,
+        ubicado en Puente Piedra. Brindamos atención médica integral a la comunidad de Lima Norte con tecnología moderna
+        y un equipo de profesionales altamente capacitados. </p>
+      <div class="nos-feats">
+        <div class="nos-feat">
+          <i class="fas fa-hospital">
+          </i> Infraestructura moderna
+        </div>
+        <div class="nos-feat">
+          <i class="fas fa-user-md">
+          </i> Médicos especializados
+        </div>
+        <div class="nos-feat">
+          <i class="fas fa-flask">
+          </i> Laboratorio clínico
+        </div>
+        <div class="nos-feat">
+          <i class="fas fa-ambulance">
+          </i> Emergencias 24/7
+        </div>
+        <div class="nos-feat">
+          <i class="fas fa-pills">
+          </i> Farmacia en sede
+        </div>
+        <div class="nos-feat">
+          <i class="fas fa-calendar-check">
+          </i> Citas en línea
+        </div>
+      </div>
+    </div>
+    <!-- SLOT IMAGEN NOSOTROS -->
+    <div class="nos-img-area">
 
-                  <div class="nos-img-slot">
-                    <img src="{{ url_for('static', filename='img/Hospital.jpg') }}" alt="Hospital Carlos Lanfranco La Hoz">
-                  </div>
+      <div class="nos-img-slot">
+        <img src="{{ url_for('static', filename='img/Hospital.jpg') }}" alt="Hospital Carlos Lanfranco La Hoz">
+      </div>
 
-                  <div class="nos-badge">
-                    <div class="nos-badge-num">200+</div>
-                    <div class="nos-badge-label">
-                      Profesionales de salud
-                    </div>
-                  </div>
+      <div class="nos-badge">
+        <div class="nos-badge-num">200+</div>
+        <div class="nos-badge-label">
+          Profesionales de salud
+        </div>
+      </div>
 
-                </div>
-                    </div>
-                  </section>
+    </div>
+  </div>
+</section>
 
 
 <!-- CÓMO FUNCIONA -->
@@ -149,21 +175,38 @@
     <h2 class="section-title">¿Cómo Solicitar Tu Cita?</h2>
     <p class="section-sub">En solo 4 pasos tienes tu cita asegurada.</p>
     <div class="steps-grid">
-      <div class="step"><div class="step-num">1</div><div class="step-title">Regístrate</div><div class="step-desc">Crea tu cuenta con tu DNI y datos personales en menos de 1 minuto.</div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-title">Elige Especialidad</div><div class="step-desc">Selecciona la especialidad médica que necesitas consultar.</div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-title">Selecciona Fecha</div><div class="step-desc">Elige el médico, fecha y hora disponible que mejor te convenga.</div></div>
-      <div class="step"><div class="step-num">4</div><div class="step-title">¡Listo!</div><div class="step-desc">Tu cita queda registrada. Recibirás la confirmación en tu panel.</div></div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Regístrate</div>
+        <div class="step-desc">Crea tu cuenta con tu DNI y datos personales en menos de 1 minuto.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Elige Especialidad</div>
+        <div class="step-desc">Selecciona la especialidad médica que necesitas consultar.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Selecciona Fecha</div>
+        <div class="step-desc">Elige el médico, fecha y hora disponible que mejor te convenga.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-title">¡Listo!</div>
+        <div class="step-desc">Tu cita queda registrada. Recibirás la confirmación en tu panel.</div>
+      </div>
     </div>
     <div style="text-align:center;margin-top:36px;">
-      <a href="{{ url_for('solicitar_cita') if current_user.is_authenticated else url_for('registro') }}" class="btn-primary" style="font-size:1rem;padding:14px 36px;">
+      <a href="{{ url_for('solicitar_cita') if current_user.is_authenticated else url_for('registro') }}"
+        class="btn-primary" style="font-size:1rem;padding:14px 36px;">
         <i class="fas fa-calendar-plus"></i> Solicitar Cita Ahora
       </a>
     </div>
   </div>
 </section>
 
- <!--URGENCIAS -->
-  <section class="urgencias" id="contacto">
+<!--URGENCIAS -->
+<section class="urgencias" id="contacto">
   <div class="urg-inner">
 
     <div class="urg-left">
@@ -175,7 +218,8 @@
       <h2 class="urg-title">¿Necesitas atención de emergencia?</h2>
 
       <p class="urg-sub">
-        El Hospital Carlos Lanfranco La Hoz cuenta con servicios asistenciales disponibles las 24 horas del día para casos de emergencia.
+        El Hospital Carlos Lanfranco La Hoz cuenta con servicios asistenciales disponibles las 24 horas del día para
+        casos de emergencia.
       </p>
 
       <div class="urg-phones">
@@ -227,5 +271,108 @@
   </div>
 </section>
 
+{% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isSpeaking = false;
+    let botIniciado = false;
+
+    function encenderMicrofonoInicio() {
+        if (!SpeechRecognition || isSpeaking) return;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'es-PE';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = function(e) {
+            let transcript = '';
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                transcript += e.results[i][0].transcript;
+            }
+            
+            let texto = transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            if (/\b(manual|teclado|escribir|normal)\b/.test(texto)) {
+                sessionStorage.setItem('botActivo', 'false');
+                hablarConfirmacion("De acuerdo, modo manual activado. El asistente de voz se apagará. Puedes navegar por la página.");
+            } else if (/\b(voz|hablar|asistente|microfono|cita)\b/.test(texto)) {
+                sessionStorage.setItem('botActivo', 'true');
+                hablarConfirmacion("Iniciando asistente de voz...", function() {
+                    window.location.href = "{{ url_for('solicitar_cita') }}";
+                });
+            } else {
+                // Si no se entendió, se repite
+                hablarConfirmacion("No te entendí bien. Por favor, di voz o manual.", function() {
+                    setTimeout(() => encenderMicrofonoInicio(), 500);
+                });
+            }
+        };
+        recognition.onerror = function(e) {
+            if(e.error === 'no-speech') {
+                hablarConfirmacion("No escuché tu respuesta. Di voz o manual.", function() {
+                    setTimeout(() => encenderMicrofonoInicio(), 500);
+                });
+            }
+            console.log('Error de reconocimiento en inicio: ', e.error);
+        };
+        try {
+            recognition.start();
+        } catch(e) {
+            console.log('No se pudo iniciar el microfono');
+        }
+    }
+
+    function hablarConfirmacion(texto, callback) {
+        if (!window.speechSynthesis) return;
+        isSpeaking = true;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(texto);
+        u.lang = 'es-PE';
+        u.rate = 0.95;
+        u.onend = function() {
+            isSpeaking = false;
+            if(callback) callback();
+        };
+        u.onerror = function() { isSpeaking = false; if(callback) callback(); };
+        window.speechSynthesis.speak(u);
+    }
+
+    function hablarInicio() {
+        if (botIniciado || !window.speechSynthesis) return;
+        botIniciado = true;
+        isSpeaking = true;
+        
+        // Cancelar cualquier audio pendiente
+        window.speechSynthesis.cancel();
+        
+        const texto = "Bienvenido al Hospital Carlos Lanfranco La Hoz. ¿Deseas solicitar una cita médica mediante voz, o de forma manual? Di voz, o manual.";
+        const u = new SpeechSynthesisUtterance(texto);
+        u.lang = 'es-PE';
+        u.rate = 0.95;
+        u.onend = function() {
+            isSpeaking = false;
+            // Activar micrófono para esperar la respuesta
+            setTimeout(() => encenderMicrofonoInicio(), 400);
+        };
+        u.onerror = function() {
+            isSpeaking = false;
+            botIniciado = false; // Permitir reintento si falló por políticas del navegador
+        };
+        window.speechSynthesis.speak(u);
+    }
+
+    // 1. Intento automático (funciona si recargas o vienes de un enlace)
+    setTimeout(() => hablarInicio(), 1000);
+
+    // 2. Respaldo de Accesibilidad (Por política estricta de Google Chrome)
+    // Si Chrome bloqueó el audio porque el usuario apenas abrió el navegador,
+    // CUALQUIER interacción (presionar una tecla, un tap, un clic) lo activará instantáneamente.
+    window.addEventListener('keydown', hablarInicio, { once: true });
+    window.addEventListener('click', hablarInicio, { once: true });
+});
+</script>
 {% endblock %}

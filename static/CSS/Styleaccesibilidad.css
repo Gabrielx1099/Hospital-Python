@@ -1,0 +1,193 @@
+/* Panel flotante de accesibilidad */
+.a11y-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #2563b0, #1a4b8c);
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(26, 75, 140, 0.45);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.a11y-toggle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(26, 75, 140, 0.55);
+}
+
+.a11y-panel {
+  position: fixed;
+  bottom: 82px;
+  right: 20px;
+  z-index: 1000;
+  width: 280px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  padding: 18px;
+  display: none;
+  border: 2px solid #dbeafe;
+}
+
+.a11y-panel.abierto {
+  display: block;
+}
+
+.a11y-panel h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
+  color: #1a4b8c;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.a11y-opcion {
+  margin-bottom: 12px;
+}
+
+.a11y-opcion label,
+.a11y-opcion span.a11y-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.a11y-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f4f7fb;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: left;
+}
+
+.a11y-switch:hover {
+  background: #e2e8f0;
+}
+
+.a11y-switch.activo {
+  background: #dbeafe;
+  color: #1a4b8c;
+}
+
+.a11y-fuente-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.a11y-fuente-btns button {
+  flex: 1;
+  padding: 8px 4px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #475569;
+}
+
+.a11y-fuente-btns button.activo {
+  border-color: #2563b0;
+  background: #dbeafe;
+  color: #1a4b8c;
+}
+
+/* Alto contraste */
+body.alto-contraste {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+body.alto-contraste nav,
+body.alto-contraste .card,
+body.alto-contraste .auth-card,
+body.alto-contraste .form-card,
+body.alto-contraste .table-card,
+body.alto-contraste .citas-section,
+body.alto-contraste .dash-stat,
+body.alto-contraste .stat-card,
+body.alto-contraste .esp-card,
+body.alto-contraste .a11y-panel {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}
+
+body.alto-contraste a,
+body.alto-contraste p,
+body.alto-contraste label,
+body.alto-contraste h1,
+body.alto-contraste h2,
+body.alto-contraste h3,
+body.alto-contraste h4,
+body.alto-contraste td,
+body.alto-contraste th,
+body.alto-contraste span {
+  color: #fff !important;
+}
+
+body.alto-contraste input,
+body.alto-contraste select,
+body.alto-contraste textarea {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}
+
+body.alto-contraste .btn-primary,
+body.alto-contraste .btn-nav {
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #fff !important;
+}
+
+body.alto-contraste footer {
+  background: #000 !important;
+  border-top: 3px solid #fff !important;
+}
+
+body.alto-contraste .flash {
+  border: 2px solid #fff !important;
+}
+
+/* Tamaños de fuente */
+body.fuente-normal {
+  font-size: 100%;
+}
+
+body.fuente-grande {
+  font-size: 115%;
+}
+
+body.fuente-extra-grande {
+  font-size: 130%;
+}
+
+/* Subrayar enlaces */
+body.subrayar-links a {
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+
+body.alto-contraste.subrayar-links a {
+  text-decoration: underline !important;
+  color: #ffff00 !important;
+}

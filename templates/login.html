@@ -1,39 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}Iniciar Sesión — Hospital Lanfranco La Hoz{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/Stylelogin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='CSS/Stylelogin.css') }}">
 {% endblock %}
 {% block content %}
 <div class="auth-wrap">
   <div class="auth-card">
     <div class="auth-header">
       <div class="logo">
-  <img src="{{ url_for('static', filename='img/logoHospital.png') }}" alt="Logo Hospital" style="width:60px; height:60px; object-fit:contain;">
-</div>
+        <img src="{{ url_for('static', filename='img/logoHospital.png') }}" alt="Logo Hospital"
+          style="width:60px; height:60px; object-fit:contain;">
+      </div>
       <h2>Iniciar Sesión</h2>
       <p>Accede a tu panel de citas médicas</p>
     </div>
     <div class="auth-body">
-      <form method="POST">
+      <form method="POST" id="login-form">
         <div class="form-group">
           <label>Correo Electrónico <span>*</span></label>
           <div class="input-icon">
             <i class="fas fa-envelope"></i>
-            <input type="email" name="email" class="form-control" placeholder="tucorreo@email.com" required/>
+            <input type="email" name="email" id="email-input" class="form-control" placeholder="tucorreo@email.com" required />
           </div>
         </div>
         <div class="form-group">
           <label>Contraseña <span>*</span></label>
           <div class="input-icon">
             <i class="fas fa-lock"></i>
-            <input type="password" name="password" class="form-control" placeholder="••••••••" required/>
+            <input type="password" name="password" id="password-input" class="form-control" placeholder="••••••••" required />
           </div>
         </div>
         <button type="submit" class="btn-full"><i class="fas fa-sign-in-alt"></i> &nbsp;Ingresar</button>
       </form>
       <div class="divider">¿No tienes cuenta?</div>
       <div class="auth-footer">
-        <a href="{{ url_for('registro') }}" style="display:block;text-align:center;padding:11px;border:2px solid var(--azul-medio);border-radius:10px;font-weight:700;color:var(--azul-medio);">
+        <a href="{{ url_for('registro') }}"
+          style="display:block;text-align:center;padding:11px;border:2px solid var(--azul-medio);border-radius:10px;font-weight:700;color:var(--azul-medio);">
           <i class="fas fa-user-plus"></i> &nbsp;Crear Cuenta Nueva
         </a>
       </div>
@@ -43,4 +45,135 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return; // No soporta voz
+    
+    let recognition = null;
+    let isSpeaking = false;
+    let pasoActual = 'correo'; // 'correo' -> 'password'
+    
+    // Función para limpiar texto y correos (ej. "juan arroba gmail punto com")
+    function limpiarCorreo(texto) {
+        let limpio = texto.toLowerCase().trim();
+        limpio = limpio.replace(/\s+/g, ''); // Quitar espacios
+        limpio = limpio.replace(/arroba/g, '@');
+        limpio = limpio.replace(/punto/g, '.');
+        return limpio;
+    }
+    
+    // Función para limpiar contraseñas
+    function limpiarPassword(texto) {
+        let limpio = texto.toLowerCase().trim();
+        limpio = limpio.replace(/\s+/g, '');
+        // Conversiones de números comunes a dígitos si es necesario
+        const numMap = {'uno':'1','dos':'2','tres':'3','cuatro':'4','cinco':'5','seis':'6','siete':'7','ocho':'8','nueve':'9','cero':'0'};
+        Object.keys(numMap).forEach(k => {
+            limpio = limpio.split(k).join(numMap[k]);
+        });
+        return limpio;
+    }
+
+    // Función para remover tildes
+    function quitarTildes(texto) {
+        return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    let silenceTimer = null;
+    let fullTranscript = '';
+
+    function procesarPasoLogin(transcript) {
+        if(pasoActual === 'correo') {
+            const emailStr = limpiarCorreo(transcript);
+            document.getElementById('email-input').value = emailStr;
+            pasoActual = 'password';
+            hablar("Correo registrado. Ahora, dicta tu contraseña.");
+        } 
+        else if(pasoActual === 'password') {
+            const passStr = limpiarPassword(transcript);
+            document.getElementById('password-input').value = passStr;
+            hablar("Iniciando sesión...", false);
+            setTimeout(() => {
+                document.getElementById('login-form').submit();
+            }, 1000);
+        }
+    }
+
+    function encenderMicrofono() {
+        if (isSpeaking) return;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'es-PE';
+        recognition.continuous = true; // Mantener escuchando
+        recognition.interimResults = true; // Capturar intermedios
+        fullTranscript = '';
+
+        recognition.onresult = function(e) {
+            clearTimeout(silenceTimer);
+            let finalChunk = '';
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                if(e.results[i].isFinal) {
+                    finalChunk += e.results[i][0].transcript;
+                }
+            }
+            if(finalChunk) fullTranscript += finalChunk + ' ';
+            
+            // Esperar 2.5 segundos de silencio
+            silenceTimer = setTimeout(() => {
+                recognition.stop();
+                if(fullTranscript.trim().length > 0) {
+                    let textoLimpio = quitarTildes(fullTranscript.trim());
+                    procesarPasoLogin(textoLimpio);
+                } else {
+                    let repiteMsg = pasoActual === 'correo' ? "No escuché tu correo. Por favor repítelo." : "No escuché tu contraseña. Por favor repítela.";
+                    hablar(repiteMsg);
+                }
+            }, 2500);
+        };
+        recognition.onerror = function(e) {
+            if(e.error === 'no-speech') {
+                let repiteMsg = pasoActual === 'correo' ? "No te escuché bien. Por favor repite tu correo." : "No te escuché bien. Por favor repite tu contraseña.";
+                hablar(repiteMsg);
+            }
+        };
+        try { recognition.start(); } catch(e) {}
+    }
+
+    function hablar(texto, autoMic = true) {
+        if (!window.speechSynthesis) return;
+        isSpeaking = true;
+        window.speechSynthesis.cancel();
+        
+        const u = new SpeechSynthesisUtterance(texto);
+        u.lang = 'es-PE';
+        u.rate = 0.95;
+        u.onend = function() {
+            isSpeaking = false;
+            if(autoMic) {
+                setTimeout(() => encenderMicrofono(), 400);
+            }
+        };
+        u.onerror = function() {
+            isSpeaking = false;
+        };
+        window.speechSynthesis.speak(u);
+    }
+
+    function iniciarVoz() {
+        if(window.vozIniciada) return;
+        window.vozIniciada = true;
+        hablar("Bienvenido. Para iniciar sesión, por favor dicta tu correo electrónico.");
+    }
+
+    // Solo iniciar automáticamente si se activó explícitamente el asistente de voz
+    if (sessionStorage.getItem('botActivo') === 'true') {
+        setTimeout(() => iniciarVoz(), 1000);
+        window.addEventListener('keydown', iniciarVoz, { once: true });
+        window.addEventListener('click', iniciarVoz, { once: true });
+    }
+});
+</script>
 {% endblock %}

@@ -38,13 +38,13 @@
             <div class="form-group">
               <label>Nombre(s) <span>*</span></label>
               <div class="input-icon"><i class="fas fa-user"></i>
-                <input type="text" name="nombre" class="form-control" placeholder="Tu nombre" required/>
+                <input type="text" name="nombre" id="reg-nombre" class="form-control" placeholder="Tu nombre" required/>
               </div>
             </div>
             <div class="form-group">
               <label>Apellidos <span>*</span></label>
               <div class="input-icon"><i class="fas fa-user"></i>
-                <input type="text" name="apellido" class="form-control" placeholder="Tus apellidos" required/>
+                <input type="text" name="apellido" id="reg-apellido" class="form-control" placeholder="Tus apellidos" required/>
               </div>
             </div>
           </div>
@@ -52,18 +52,18 @@
             <div class="form-group">
               <label>DNI <span>*</span></label>
               <div class="input-icon"><i class="fas fa-id-card"></i>
-                <input type="text" name="dni" class="form-control" maxlength="8" placeholder="12345678" required/>
+                <input type="text" name="dni" id="reg-dni" class="form-control" maxlength="8" placeholder="12345678" required/>
               </div>
             </div>
             <div class="form-group">
               <label>Fecha de Nacimiento</label>
-              <input type="date" name="fecha_nac" class="form-control"/>
+              <input type="date" name="fecha_nac" id="reg-fecha" class="form-control"/>
             </div>
           </div>
           <div class="form-group">
             <label>Teléfono / Celular</label>
             <div class="input-icon"><i class="fas fa-phone"></i>
-              <input type="tel" name="telefono" class="form-control" placeholder="987654321"/>
+              <input type="tel" name="telefono" id="reg-telefono" class="form-control" placeholder="987654321"/>
             </div>
           </div>
           <button type="button" class="btn-full" id="btn-next">
@@ -77,7 +77,7 @@
           <div class="form-group">
             <label>Correo Electrónico <span>*</span></label>
             <div class="input-icon"><i class="fas fa-envelope"></i>
-              <input type="email" name="email" class="form-control" placeholder="tucorreo@email.com" required/>
+              <input type="email" name="email" id="reg-email" class="form-control" placeholder="tucorreo@email.com" required/>
             </div>
           </div>
           <div class="section-label" style="margin-top:8px;"><i class="fas fa-lock"></i> &nbsp;Contraseña</div>
@@ -92,15 +92,15 @@
           <div class="form-group">
             <label>Confirmar Contraseña <span>*</span></label>
             <div class="input-icon"><i class="fas fa-lock"></i>
-              <input type="password" name="confirm_password" class="form-control" placeholder="Repite la contraseña" required/>
+              <input type="password" name="confirm_password" id="reg-confirm-password" class="form-control" placeholder="Repite la contraseña" required/>
             </div>
           </div>
           <div class="check-group">
             <label class="check-label">
-              <input type="checkbox" required/> Acepto Términos y Condiciones
+              <input type="checkbox" id="chk-term" required/> Acepto Términos y Condiciones
             </label>
             <label class="check-label">
-              <input type="checkbox" required/> Acepto Políticas de Privacidad
+              <input type="checkbox" id="chk-priv" required/> Acepto Políticas de Privacidad
             </label>
           </div>
           <div class="btn-row">
@@ -170,5 +170,174 @@
     pwFill.style.background = colors[strength - 1] || '#e2e8f0';
     pwHint.textContent = v.length ? labels[strength - 1] || '' : '';
   });
+
+  // ========== LÓGICA DE ASISTENTE DE VOZ PARA REGISTRO ==========
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+      let recognition = null;
+      let isSpeaking = false;
+      let pasosRegistro = ['nombre', 'apellido', 'dni', 'fecha', 'telefono', 'email', 'password'];
+      let idxPaso = 0;
+      
+      const prompts = {
+          'nombre': 'Bienvenido al registro. Por favor, dicta tus nombres.',
+          'apellido': 'Dicta tus apellidos.',
+          'dni': 'Dicta tu número de D.N.I.',
+          'fecha': 'Dicta tu año de nacimiento, por ejemplo, mil novecientos noventa. O dicta la fecha completa.',
+          'telefono': 'Dicta tu número de celular o teléfono.',
+          'email': 'Pasemos a los datos de acceso. Dicta tu correo electrónico.',
+          'password': 'Dicta tu contraseña.'
+      };
+
+      function limpiarNumeros(texto) {
+          let limpio = texto.toLowerCase().trim();
+          const numMap = {'uno':'1','dos':'2','tres':'3','cuatro':'4','cinco':'5','seis':'6','siete':'7','ocho':'8','nueve':'9','cero':'0'};
+          Object.keys(numMap).forEach(k => { limpio = limpio.split(k).join(numMap[k]); });
+          return limpio.replace(/\D/g, ''); // Solo dejar números
+      }
+
+      function limpiarCorreo(texto) {
+          let limpio = texto.toLowerCase().trim();
+          limpio = limpio.replace(/\s+/g, '');
+          limpio = limpio.replace(/arroba/g, '@');
+          limpio = limpio.replace(/punto/g, '.');
+          return limpio;
+      }
+
+      function quitarTildes(texto) {
+          return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parsearFechaEspanol(texto) {
+          let t = texto.toLowerCase();
+          const meses = {'enero':'01','febrero':'02','marzo':'03','abril':'04','mayo':'05','junio':'06',
+                         'julio':'07','agosto':'08','septiembre':'09','setiembre':'09','octubre':'10','noviembre':'11','diciembre':'12'};
+          let mes = '01';
+          for(let m in meses) {
+              if(t.includes(m)) { mes = meses[m]; break; }
+          }
+          
+          // Google STT suele transcribir los números como dígitos ("5 de marzo de 1990")
+          let numbers = t.match(/\d+/g);
+          let dia = '01';
+          let anio = '1990';
+          if(numbers) {
+              numbers.forEach(n => {
+                  if(n.length === 4) anio = n;
+                  else if(n.length <= 2 && parseInt(n) > 0 && parseInt(n) <= 31) dia = n.padStart(2, '0');
+                  else if(n.length === 2 && parseInt(n) > 31) anio = '19' + n; // fallback para años como "95" -> "1995"
+              });
+          }
+          return `${anio}-${mes}-${dia}`;
+      }
+
+      let silenceTimer = null;
+      let fullTranscript = '';
+
+      function procesarPasoRegistro(transcript) {
+          const paso = pasosRegistro[idxPaso];
+          
+          if(paso === 'nombre') {
+              document.getElementById('reg-nombre').value = transcript;
+          } else if(paso === 'apellido') {
+              document.getElementById('reg-apellido').value = transcript;
+          } else if(paso === 'dni') {
+              document.getElementById('reg-dni').value = limpiarNumeros(transcript);
+          } else if(paso === 'fecha') {
+              document.getElementById('reg-fecha').value = parsearFechaEspanol(transcript);
+          } else if(paso === 'telefono') {
+              document.getElementById('reg-telefono').value = limpiarNumeros(transcript);
+          } else if(paso === 'email') {
+              document.getElementById('reg-email').value = limpiarCorreo(transcript);
+          } else if(paso === 'password') {
+              let pass = transcript.toLowerCase().trim().replace(/\s+/g, '');
+              document.getElementById('password-input').value = pass;
+              document.getElementById('reg-confirm-password').value = pass; // Auto-confirmar
+          }
+          
+          idxPaso++;
+          
+          if(idxPaso === 5) {
+              btnNext.click();
+          }
+          
+          if(idxPaso < pasosRegistro.length) {
+              hablarRegistro(prompts[pasosRegistro[idxPaso]]);
+          } else {
+              document.getElementById('chk-term').checked = true;
+              document.getElementById('chk-priv').checked = true;
+              hablarRegistro("Registro completado, creando cuenta...", false);
+              setTimeout(() => { document.getElementById('registro-form').submit(); }, 1500);
+          }
+      }
+
+      function encenderMicrofonoRegistro() {
+          if (isSpeaking) return;
+          recognition = new SpeechRecognition();
+          recognition.lang = 'es-PE';
+          recognition.continuous = true; // Mantener escuchando
+          recognition.interimResults = true; // Para capturar mientras habla
+          fullTranscript = '';
+
+          recognition.onresult = function(e) {
+              clearTimeout(silenceTimer);
+              let finalChunk = '';
+              for (let i = e.resultIndex; i < e.results.length; ++i) {
+                  if (e.results[i].isFinal) {
+                      finalChunk += e.results[i][0].transcript;
+                  }
+              }
+              if(finalChunk) fullTranscript += finalChunk + ' ';
+              
+              // Esperar 2.5 segundos de silencio para considerar que terminó de hablar
+              silenceTimer = setTimeout(() => {
+                  recognition.stop();
+                  if(fullTranscript.trim().length > 0) {
+                      let textoLimpio = quitarTildes(fullTranscript.trim());
+                      procesarPasoRegistro(textoLimpio);
+                  } else {
+                      // No dijo nada válido
+                      hablarRegistro("No te escuché bien. " + prompts[pasosRegistro[idxPaso]]);
+                  }
+              }, 2500);
+          };
+          
+          recognition.onerror = function(e) {
+              if(e.error === 'no-speech') { 
+                  // Si no habla absolutamente nada y el API hace timeout natural
+                  hablarRegistro("No te escuché bien. " + prompts[pasosRegistro[idxPaso]]); 
+              }
+          };
+          try { recognition.start(); } catch(e) {}
+      }
+
+      function hablarRegistro(texto, autoMic = true) {
+          if (!window.speechSynthesis) return;
+          isSpeaking = true;
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(texto);
+          u.lang = 'es-PE';
+          u.rate = 0.95;
+          u.onend = function() {
+              isSpeaking = false;
+              if(autoMic) setTimeout(() => encenderMicrofonoRegistro(), 400);
+          };
+          u.onerror = () => { isSpeaking = false; };
+          window.speechSynthesis.speak(u);
+      }
+
+      function iniciarVozRegistro() {
+          if(window.vozIniciada) return;
+          window.vozIniciada = true;
+          hablarRegistro(prompts['nombre']);
+      }
+
+      // Solo iniciar automáticamente si se activó explícitamente el asistente de voz
+      if (sessionStorage.getItem('botActivo') === 'true') {
+          setTimeout(() => iniciarVozRegistro(), 1000);
+          window.addEventListener('keydown', iniciarVozRegistro, { once: true });
+          window.addEventListener('click', iniciarVozRegistro, { once: true });
+      }
+  }
 </script>
 {% endblock %}

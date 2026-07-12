@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Solicitar Cita — Hospital Lanfranco La Hoz{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/Stylesolicitar_cita.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='CSS/Stylesolicitar_cita.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -10,63 +10,286 @@
     <h1>📅 Solicitar Cita Médica</h1>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('manual')"><i class="fas fa-keyboard"></i> Solicitud Manual</div>
-    <div class="tab" onclick="switchTab('voz')"><i class="fas fa-microphone"></i> Asistente de Voz</div>
+  <!-- ══════════════════════════════════════════════════════════════════
+       ASISTENTE VIRTUAL — SIEMPRE VISIBLE, INTERFAZ PRIMARIA
+       Es la primera cosa que ve/escucha cualquier usuario.
+       Maneja: auth check (no autenticados) y selección voz/manual (autenticados).
+  ══════════════════════════════════════════════════════════════════ -->
+  <section
+    class="asistente-envolvente"
+    role="region"
+    aria-label="Asistente virtual — responde aquí para que el asistente te guíe"
+  >
+    <div class="asistente-cabecera">
+      <i class="fas fa-robot" aria-hidden="true"></i>
+      <span>Asistente Virtual del Hospital</span>
+    </div>
+
+    <div class="voz-compat-notice">
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      <span>Escribe tu respuesta en el campo de abajo o usa el micrófono. El micrófono requiere <strong>Google Chrome</strong>.</span>
+    </div>
+
+    <!-- Chat: aria-live="polite" para que los lectores de pantalla anuncien
+         cada mensaje nuevo del bot sin interrumpir lo que el usuario hace. -->
+    <div
+      class="chat-box"
+      id="chatBox"
+      role="log"
+      aria-live="polite"
+      aria-atomic="false"
+      aria-label="Conversación con el asistente"
+    >
+      <!-- Mensaje inicial inyectado por JS en DOMContentLoaded -->
+    </div>
+
+    <!-- Campo de texto: aria-label descriptivo, auto-focus al cargar -->
+    <div class="chat-input-fila">
+      <label for="chatInput" class="sr-only">
+        Escribe tu respuesta al asistente virtual
+      </label>
+      <input
+        type="text"
+        id="chatInput"
+        placeholder="Escribe tu respuesta aquí..."
+        autocomplete="off"
+        aria-label="Campo de respuesta para el asistente virtual"
+        onkeydown="if(event.key==='Enter') enviarTextoChat()"
+      >
+      <button
+        type="button"
+        class="btn-primary btn-enviar-chat"
+        id="btn-enviar"
+        onclick="enviarTextoChat()"
+        aria-label="Enviar mensaje al asistente"
+      >
+        <i class="fas fa-paper-plane" aria-hidden="true"></i>
+        <span>Enviar</span>
+      </button>
+    </div>
+
+    <!-- Reconocimiento de voz -->
+    <div
+      class="voz-transcript"
+      id="transcript"
+      aria-live="polite"
+      aria-label="Texto reconocido por el micrófono"
+    >
+      O presiona el micrófono para hablar...
+    </div>
+    <div
+      class="voz-status"
+      id="voz-status"
+      aria-live="assertive"
+      aria-atomic="true"
+    >
+      Presiona el micrófono para empezar
+    </div>
+    <button
+      type="button"
+      class="mic-btn"
+      id="micBtn"
+      onclick="toggleVoz()"
+      aria-label="Activar o desactivar el micrófono para hablar con el asistente"
+      title="Activar micrófono"
+    >
+      <i class="fas fa-microphone" id="micIcon" aria-hidden="true"></i>
+    </button>
+
+  </section>
+
+  <!-- ══════ ACCESOS VISUALES PARA NO AUTENTICADOS ══════
+       Complemento visual: permite que usuarios videntes actúen sin leer el chat.
+       El bot guía a ciegos con la misma lógica. -->
+  {% if not autenticado %}
+  <div
+    class="auth-visual-links"
+    id="auth-visual"
+    role="navigation"
+    aria-label="Botones de acceso directo a la cuenta"
+  >
+    <p>¿Ya tienes cuenta? También puedes acceder directamente:</p>
+    <a
+      href="{{ url_for('login') }}"
+      class="btn-auth-link"
+      aria-label="Ir a la página de inicio de sesión"
+    >
+      <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+      Iniciar sesión
+    </a>
+    <a
+      href="{{ url_for('registro') }}"
+      class="btn-auth-link btn-auth-secondary"
+      aria-label="Ir a la página para crear una cuenta nueva"
+    >
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      Crear cuenta
+    </a>
+  </div>
+  {% endif %}
+
+  {% if autenticado %}
+  <!-- ══════ SELECCIÓN VISUAL (solo autenticados)
+       Complemento para usuarios videntes. El bot hace lo mismo por voz/texto. -->
+  <div
+    id="pantalla-eleccion"
+    aria-label="Elige cómo deseas solicitar tu cita"
+  >
+    <p class="eleccion-subtitle">
+      O elige directamente con un clic (también puedes responder al asistente de arriba):
+    </p>
+    <div class="eleccion-grid">
+
+      <button
+        type="button"
+        class="eleccion-card"
+        id="btn-elegir-voz"
+        onclick="elegirModo('voz')"
+        aria-label="Solicitar cita con el asistente de voz o chat de inteligencia artificial"
+      >
+        <div class="eleccion-icono icono-voz" aria-hidden="true">
+          <i class="fas fa-robot"></i>
+        </div>
+        <h2>Asistente de Voz / Chat</h2>
+        <p>Describe tus síntomas hablando o escribiendo. La IA te recomienda la especialidad.</p>
+        <span class="eleccion-badge badge-voz">✨ Recomendado</span>
+      </button>
+
+      <button
+        type="button"
+        class="eleccion-card"
+        id="btn-elegir-manual"
+        onclick="elegirModo('manual')"
+        aria-label="Solicitar cita llenando el formulario manual paso a paso"
+      >
+        <div class="eleccion-icono icono-manual" aria-hidden="true">
+          <i class="fas fa-clipboard-list"></i>
+        </div>
+        <h2>Formulario Manual</h2>
+        <p>Selecciona directamente especialidad, médico, fecha y hora disponible.</p>
+        <span class="eleccion-badge">📋 Tradicional</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Tabs ocultos visualmente — accesibilidad de teclado y ARIA -->
+  <div class="tabs" role="tablist" aria-label="Tipo de solicitud de cita">
+    <button type="button" class="tab" role="tab" aria-selected="false"
+            aria-controls="panel-manual" id="tab-manual"
+            onclick="elegirModo('manual')">
+      <i class="fas fa-keyboard" aria-hidden="true"></i> Solicitud Manual
+    </button>
+    <button type="button" class="tab" role="tab" aria-selected="false"
+            aria-controls="panel-voz" id="tab-voz"
+            onclick="elegirModo('voz')">
+      <i class="fas fa-microphone" aria-hidden="true"></i> Asistente de Voz
+    </button>
   </div>
 
   <!-- ══════ PANEL MANUAL ══════ -->
-  <div class="panel active" id="panel-manual">
+  <div class="panel" id="panel-manual" role="tabpanel" aria-labelledby="tab-manual">
+    <div class="panel-nav-btns">
+      <button type="button" class="btn-cambiar-flujo"
+              onclick="volverAEleccion()"
+              aria-label="Volver a elegir cómo solicitar la cita">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Volver a la elección
+      </button>
+      <button type="button" class="btn-cambiar-flujo"
+              onclick="elegirModo('voz')"
+              aria-label="Cambiar al asistente de voz e inteligencia artificial">
+        <i class="fas fa-robot" aria-hidden="true"></i>
+        Prefiero el asistente de voz
+      </button>
+    </div>
+
     <div class="form-card">
       <form method="POST" id="form-cita">
         <input type="hidden" name="tipo" value="manual"/>
+
         <div class="form-group">
-          <label>Especialidad <span>*</span></label>
-          <select name="especialidad_id" id="sel-esp" class="form-control" required onchange="cargarMedicos()">
+          <label for="sel-esp">
+            Especialidad <span aria-hidden="true">*</span>
+            <span class="sr-only">(campo requerido)</span>
+          </label>
+          <select name="especialidad_id" id="sel-esp" class="form-control"
+                  required onchange="cargarMedicos()">
             <option value="">— Selecciona una especialidad —</option>
             {% for esp in especialidades %}
-            <option value="{{ esp.id }}"> {{ esp.nombre }}</option>
+            <option value="{{ esp.id }}">{{ esp.nombre }}</option>
             {% endfor %}
           </select>
         </div>
+
         <div class="form-group">
-          <label>Médico <span>*</span></label>
-          <select name="medico_id" id="sel-med" class="form-control" required onchange="cargarHorarios()">
+          <label for="sel-med">
+            Médico <span aria-hidden="true">*</span>
+            <span class="sr-only">(campo requerido)</span>
+          </label>
+          <select name="medico_id" id="sel-med" class="form-control"
+                  required onchange="cargarHorarios()">
             <option value="">— Primero selecciona una especialidad —</option>
           </select>
         </div>
+
         <div class="form-row">
           <div class="form-group">
-            <label>Fecha <span>*</span></label>
-            <input type="date" name="fecha" id="inp-fecha" class="form-control" required
-              min="{{ today }}" onchange="cargarHorarios()"/>
+            <label for="inp-fecha">
+              Fecha <span aria-hidden="true">*</span>
+              <span class="sr-only">(campo requerido)</span>
+            </label>
+            <input type="date" name="fecha" id="inp-fecha" class="form-control"
+              required min="{{ today }}" onchange="cargarHorarios()"/>
           </div>
           <div class="form-group">
-            <label>Hora Disponible <span>*</span></label>
+            <label>
+              Hora Disponible <span aria-hidden="true">*</span>
+              <span class="sr-only">(campo requerido)</span>
+            </label>
             <input type="hidden" name="hora" id="inp-hora" required/>
-            <div id="horarios-wrap">
+            <div id="horarios-wrap" aria-live="polite">
               <p style="color:#94a3b8;font-size:.85rem;">Selecciona médico y fecha primero.</p>
             </div>
           </div>
         </div>
+
         <div class="form-group">
-          <label>Motivo de Consulta</label>
-          <textarea name="motivo" class="form-control" rows="3" placeholder="Describe brevemente el motivo de tu visita..."></textarea>
+          <label for="motivo-inp">Motivo de Consulta</label>
+          <textarea name="motivo" id="motivo-inp" class="form-control" rows="3"
+                    placeholder="Describe brevemente el motivo de tu visita..."></textarea>
         </div>
-        <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:1rem;">
-          <i class="fas fa-calendar-check"></i> Confirmar Cita
+
+        <button type="submit" class="btn-primary"
+                style="width:100%;justify-content:center;padding:14px;font-size:1rem;"
+                aria-label="Confirmar y registrar la cita médica">
+          <i class="fas fa-calendar-check" aria-hidden="true"></i>
+          Confirmar Cita
         </button>
       </form>
     </div>
   </div>
 
-  <!-- ══════ PANEL VOZ IA ══════ -->
-  <div class="panel" id="panel-voz">
-    <div class="voz-card">
-      <div class="voz-title"><i class="fas fa-robot"></i> Asistente de Voz</div>
-      <p class="voz-desc">El asistente te guiará paso a paso: especialidad, médico, fecha, hora y motivo. Al final confirmará tu cita automáticamente.</p>
+  <!-- ══════ PANEL VOZ — Barra de pasos + resumen (el chat está arriba siempre) ══════ -->
+  <div class="panel" id="panel-voz" role="tabpanel" aria-labelledby="tab-voz">
+    <div class="panel-nav-btns">
+      <button type="button" class="btn-cambiar-flujo"
+              onclick="volverAEleccion()"
+              aria-label="Volver a elegir cómo solicitar la cita">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Volver a la elección
+      </button>
+      <button type="button" class="btn-cambiar-flujo"
+              id="btn-ir-a-manual"
+              onclick="irAManual()"
+              aria-label="Cambiar al formulario manual conservando los datos ya capturados">
+        <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+        Prefiero llenarlo manualmente
+      </button>
+    </div>
 
-      <div class="voz-steps">
+    <div class="voz-extra-panel">
+      <div class="voz-steps" aria-label="Progreso del proceso de solicitud de cita">
         <div class="voz-step" id="step-esp"><div class="num">1</div>Especialidad</div>
         <div class="voz-step" id="step-med"><div class="num">2</div>Médico</div>
         <div class="voz-step" id="step-fecha"><div class="num">3</div>Fecha</div>
@@ -75,14 +298,11 @@
         <div class="voz-step" id="step-confirm"><div class="num">6</div>Confirmar</div>
       </div>
 
-      <div class="voz-compat-notice">
-        <i class="fas fa-info-circle"></i>
-        <span>Requiere <strong>Google Chrome</strong>, conexión a internet y permiso de micrófono.</span>
-        <span class="voz-compat-brave">Si usas <strong>Brave</strong>, desactiva Shields en este sitio.</span>
-      </div>
-
-      <div class="voz-resumen" id="voz-resumen">
-        <div class="voz-resumen-title"><i class="fas fa-clipboard-list"></i> Datos de tu cita</div>
+      <div class="voz-resumen" id="voz-resumen"
+           aria-label="Resumen de los datos de tu cita capturados hasta ahora">
+        <div class="voz-resumen-title">
+          <i class="fas fa-clipboard-list" aria-hidden="true"></i> Datos de tu cita
+        </div>
         <div class="voz-resumen-grid">
           <div class="voz-campo" id="campo-esp"><span>Especialidad</span><strong>—</strong></div>
           <div class="voz-campo" id="campo-med"><span>Médico</span><strong>—</strong></div>
@@ -92,115 +312,199 @@
         </div>
       </div>
 
-      <div class="chat-box" id="chatBox">
-        <div class="msg ia">Hola, soy el asistente del Hospital Lanfranco La Hoz. Te guiaré paso a paso para agendar tu cita. ¿Qué especialidad necesitas?</div>
-      </div>
-
-      <div class="voz-transcript" id="transcript">Presiona el micrófono y habla...</div>
-      <div class="voz-status" id="voz-status">Presiona el micrófono para empezar</div>
-
-      <button type="button" class="mic-btn" id="micBtn" onclick="toggleVoz()" title="Activar micrófono">
-        <i class="fas fa-microphone" id="micIcon"></i>
-      </button>
-
-      <button type="button" class="btn-nav-outline" onclick="resetChat()" style="margin-top:8px;color:#93c5fd;border-color:#93c5fd;">
-        <i class="fas fa-redo"></i> Reiniciar conversación
+      <button type="button" class="btn-nav-outline" onclick="resetChat()"
+              style="margin-top:10px;color:#60a5fa;border-color:#60a5fa;"
+              aria-label="Reiniciar toda la conversación con el asistente desde el principio">
+        <i class="fas fa-redo" aria-hidden="true"></i> Reiniciar conversación
       </button>
     </div>
   </div>
+  {% endif %}{# fin autenticado #}
 
-</div>
+</div>{# fin cita-wrap #}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const today = new Date().toISOString().split('T')[0];
-document.getElementById('inp-fecha').min = today;
+// ── Constantes del servidor ───────────────────────────────────────────────────
+const AUTENTICADO    = {{ autenticado | tojson }};
+const NOMBRE_USUARIO = {{ nombre_usuario | tojson }};
+const today          = new Date().toISOString().split('T')[0];
 
-function switchTab(tab) {
-  if (tab !== 'voz') {
-    detenerAsistenteVoz();
+{% if autenticado %}
+document.addEventListener('DOMContentLoaded', function () {
+  const inpFecha = document.getElementById('inp-fecha');
+  if (inpFecha) inpFecha.min = today;
+});
+{% endif %}
+
+// ── Estado global ─────────────────────────────────────────────────────────────
+let modoActual  = 'ninguno'; // 'ninguno' | 'voz' | 'manual'
+// Estado del bot: 'inicio_auth' (no auth) | 'seleccion_modo' (auth) | flujo de cita
+let pasoActual  = AUTENTICADO ? 'seleccion_modo' : 'inicio_auth';
+let tempRecomendacion = null;
+
+let citaVoz = {
+  especialidad_id: null, especialidad_nombre: '',
+  medico_id: null,       medico_nombre: '',
+  fecha: null,           fecha_legible: '',
+  hora: null,            motivo: '',
+  medicos: [],           horarios: []
+};
+
+// ── Navegación entre paneles ──────────────────────────────────────────────────
+function elegirModo(modo) {
+  modoActual = modo;
+  if (modo !== 'voz') detenerAsistenteVoz();
+
+{% if autenticado %}
+  const eleccion    = document.getElementById('pantalla-eleccion');
+  const panelManual = document.getElementById('panel-manual');
+  const panelVoz    = document.getElementById('panel-voz');
+  const tabManual   = document.getElementById('tab-manual');
+  const tabVoz      = document.getElementById('tab-voz');
+
+  if (eleccion)    eleccion.classList.add('hidden');
+  if (panelManual) { panelManual.classList.toggle('active', modo === 'manual'); panelManual.classList.toggle('hidden', modo !== 'manual'); }
+  if (panelVoz)    { panelVoz.classList.toggle('active',    modo === 'voz');    panelVoz.classList.toggle('hidden',    modo !== 'voz'); }
+  if (tabManual)   { tabManual.setAttribute('aria-selected', modo === 'manual' ? 'true' : 'false'); tabManual.classList.toggle('active', modo === 'manual'); }
+  if (tabVoz)      { tabVoz.setAttribute('aria-selected',    modo === 'voz'    ? 'true' : 'false'); tabVoz.classList.toggle('active',    modo === 'voz'); }
+{% endif %}
+
+  if (modo === 'voz') {
+    pasoActual = 'especialidad';
+    actualizarPasosUI();
+    responderIA(
+      '¡Perfecto! Cuéntame qué síntomas tienes o qué especialidad médica necesitas.',
+      'Cuéntame tus síntomas o la especialidad que necesitas.'
+    );
   }
-  document.querySelectorAll('.tab').forEach((t, i) =>
-    t.classList.toggle('active', (tab === 'manual' && i === 0) || (tab === 'voz' && i === 1))
-  );
-  document.getElementById('panel-manual').classList.toggle('active', tab === 'manual');
-  document.getElementById('panel-voz').classList.toggle('active', tab === 'voz');
+  // Devolver foco al chat para accesibilidad de teclado
+  setTimeout(() => { const ci = document.getElementById('chatInput'); if (ci) ci.focus(); }, 120);
 }
 
+function volverAEleccion() {
+  modoActual = 'ninguno';
+  detenerAsistenteVoz();
+  pasoActual = 'seleccion_modo';
+
+{% if autenticado %}
+  const eleccion    = document.getElementById('pantalla-eleccion');
+  const panelManual = document.getElementById('panel-manual');
+  const panelVoz    = document.getElementById('panel-voz');
+  if (eleccion)    eleccion.classList.remove('hidden');
+  if (panelManual) { panelManual.classList.remove('active'); panelManual.classList.add('hidden'); }
+  if (panelVoz)    { panelVoz.classList.remove('active');    panelVoz.classList.add('hidden'); }
+{% endif %}
+
+  responderIA(
+    '¿Cómo prefieres solicitar tu cita? Di "voz" para el asistente de voz, o "manual" para el formulario.',
+    'Di voz o manual.'
+  );
+  setTimeout(() => { const ci = document.getElementById('chatInput'); if (ci) ci.focus(); }, 120);
+}
+
+function irAManual() {
+  sincronizarFormularioManual();
+  elegirModo('manual');
+  if (citaVoz.especialidad_id) {
+    setTimeout(() => {
+      const pm = document.getElementById('panel-manual');
+      if (pm) pm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 160);
+  }
+  responderIA(
+    'De acuerdo. El formulario está listo con los datos que capturamos. Puedes seguir usando este chat si tienes dudas.',
+    'Formulario listo.'
+  );
+}
+
+// Alias de compatibilidad con código interno del flujo de voz
+function switchTab(tab)       { elegirModo(tab); }
+function mostrarSeccion(cual) { cual === 'eleccion' ? volverAEleccion() : elegirModo(cual); }
+
+// ── Formulario manual ─────────────────────────────────────────────────────────
+{% if autenticado %}
 async function cargarMedicos() {
-  const espId = document.getElementById('sel-esp').value;
-  const sel = document.getElementById('sel-med');
-  sel.innerHTML = '<option>Cargando...</option>';
-  if (!espId) { sel.innerHTML = '<option>— Selecciona especialidad primero —</option>'; return; }
-  const r = await fetch(`/api/medicos/${espId}`);
+  const selEsp = document.getElementById('sel-esp');
+  const selMed = document.getElementById('sel-med');
+  if (!selEsp || !selMed) return;
+  const espId = selEsp.value;
+  selMed.innerHTML = '<option>Cargando...</option>';
+  if (!espId) { selMed.innerHTML = '<option>— Selecciona especialidad primero —</option>'; return; }
+  const r    = await fetch(`/api/medicos/${espId}`);
   const data = await r.json();
-  sel.innerHTML = '<option value="">— Selecciona un médico —</option>' + data.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
-  document.getElementById('horarios-wrap').innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Selecciona fecha para ver horarios.</p>';
+  selMed.innerHTML = '<option value="">— Selecciona un médico —</option>' +
+    data.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+  const hw = document.getElementById('horarios-wrap');
+  if (hw) hw.innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Selecciona fecha para ver horarios.</p>';
 }
 
 async function cargarHorarios() {
-  const medId = document.getElementById('sel-med').value;
-  const fecha = document.getElementById('inp-fecha').value;
-  const wrap = document.getElementById('horarios-wrap');
+  const selMed   = document.getElementById('sel-med');
+  const inpFecha = document.getElementById('inp-fecha');
+  const wrap     = document.getElementById('horarios-wrap');
+  if (!selMed || !inpFecha || !wrap) return;
+  const medId = selMed.value;
+  const fecha = inpFecha.value;
   if (!medId || !fecha) return;
   wrap.innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Cargando horarios...</p>';
-  const r = await fetch(`/api/horarios/${medId}/${fecha}`);
+  const r     = await fetch(`/api/horarios/${medId}/${fecha}`);
   const horas = await r.json();
   if (!horas.length) { wrap.innerHTML = '<p style="color:#ef4444;font-size:.85rem;">No hay horarios disponibles para esta fecha.</p>'; return; }
-  wrap.innerHTML = '<div class="horarios-grid">' + horas.map(h => `<div class="horario-btn" onclick="selHora(this,'${h}')">${h}</div>`).join('') + '</div>';
+  wrap.innerHTML = '<div class="horarios-grid">' +
+    horas.map(h => `<button type="button" class="horario-btn" aria-label="Seleccionar horario ${h}" onclick="selHora(this,'${h}')">${h}</button>`).join('') +
+    '</div>';
 }
 
 function selHora(el, hora) {
   document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
-  document.getElementById('inp-hora').value = hora;
+  const inp = document.getElementById('inp-hora');
+  if (inp) inp.value = hora;
 }
+{% else %}
+function cargarMedicos()  {}
+function cargarHorarios() {}
+function selHora()        {}
+{% endif %}
 
-// ── VOZ IA — flujo conversacional completo ───────────────────────────────────
+// ── Constantes del flujo de voz ───────────────────────────────────────────────
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+{% if autenticado %}
 const ESPECIALIDADES_NOMBRE = {
-  {% for esp in especialidades %}
-  {{ esp.id }}: {{ esp.nombre|tojson }},
-  {% endfor %}
+  {% for esp in especialidades %}{{ esp.id }}: {{ esp.nombre | tojson }},{% endfor %}
+};
+{% else %}
+const ESPECIALIDADES_NOMBRE = {};
+{% endif %}
+
+const PASOS_VOZ = ['especialidad','medico','fecha','hora','motivo','confirmar'];
+const STEP_IDS  = {
+  especialidad: 'step-esp', medico: 'step-med', fecha: 'step-fecha',
+  hora: 'step-hora', motivo: 'step-motivo', confirmar: 'step-confirm'
 };
 
-const PASOS_VOZ = ['especialidad', 'medico', 'fecha', 'hora', 'motivo', 'confirmar'];
-const STEP_IDS = { especialidad:'step-esp', medico:'step-med', fecha:'step-fecha', hora:'step-hora', motivo:'step-motivo', confirmar:'step-confirm' };
-
-let recognition = null;
-let micActivo = false;
-let botHablando = false;
+let recognition          = null;
+let micActivo            = false;
+let botHablando          = false;
 let ultimoTextoProcesado = '';
-let pasoActual = 'especialidad';
-
-let citaVoz = {
-  especialidad_id: null,
-  especialidad_nombre: '',
-  medico_id: null,
-  medico_nombre: '',
-  fecha: null,
-  fecha_legible: '',
-  hora: null,
-  motivo: '',
-  medicos: [],
-  horarios: []
-};
 
 const especialidades_kw = {
-  'cardiologia': 1, 'cardiología': 1, 'corazon': 1, 'corazón': 1,
-  'pediatria': 2, 'pediatría': 2, 'ninos': 2, 'niños': 2, 'niño': 2,
-  'ginecologia': 3, 'ginecología': 3, 'mujer': 3,
-  'traumatologia': 4, 'traumatología': 4, 'huesos': 4, 'hueso': 4,
-  'medicina general': 5, 'general': 5,
-  'oftalmologia': 6, 'oftalmología': 6, 'ojos': 6, 'ojo': 6,
-  'neurologia': 7, 'neurología': 7, 'cerebro': 7,
-  'dermatologia': 8, 'dermatología': 8, 'piel': 8
+  'cardiologia':1,'cardiología':1,'corazon':1,'corazón':1,
+  'pediatria':2,'pediatría':2,'ninos':2,'niños':2,'niño':2,
+  'ginecologia':3,'ginecología':3,'mujer':3,
+  'traumatologia':4,'traumatología':4,'huesos':4,'hueso':4,
+  'medicina general':5,'general':5,
+  'oftalmologia':6,'oftalmología':6,'ojos':6,'ojo':6,
+  'neurologia':7,'neurología':7,'cerebro':7,
+  'dermatologia':8,'dermatología':8,'piel':8
 };
 
 const mesesMap = {
-  enero:0, febrero:1, marzo:2, abril:3, mayo:4, junio:5,
-  julio:6, agosto:7, septiembre:8, setiembre:8, octubre:9, noviembre:10, diciembre:11
+  enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,
+  julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11
 };
 
 const horasMap = {
@@ -212,74 +516,73 @@ const horasMap = {
   'dieciseis':'16:00','dieciséis':'16:00','dieciseis y media':'16:30'
 };
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function normalizar(txt) {
-  return txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  return txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
 }
-
 function formatISO(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-
 function formatFechaLegible(iso) {
   const [y,m,d] = iso.split('-');
-  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const meses   = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   return `${d}/${meses[parseInt(m)-1]}/${y}`;
 }
 
 function actualizarPasosUI() {
-  PASOS_VOZ.forEach((p, i) => {
+  PASOS_VOZ.forEach((p,i) => {
     const el = document.getElementById(STEP_IDS[p]);
     if (!el) return;
     el.classList.remove('active-step','done-step');
-    const idxActual = PASOS_VOZ.indexOf(pasoActual);
-    if (p === pasoActual) el.classList.add('active-step');
-    else if (i < idxActual) el.classList.add('done-step');
+    const dp  = (pasoActual === 'confirmar_especialidad') ? 'especialidad' : pasoActual;
+    const idx = PASOS_VOZ.indexOf(dp);
+    if (p === dp)   el.classList.add('active-step');
+    else if (i < idx) el.classList.add('done-step');
   });
 }
 
 function actualizarResumenUI() {
   const campos = {
-    'campo-esp': citaVoz.especialidad_nombre,
-    'campo-med': citaVoz.medico_nombre,
+    'campo-esp':   citaVoz.especialidad_nombre,
+    'campo-med':   citaVoz.medico_nombre,
     'campo-fecha': citaVoz.fecha_legible,
-    'campo-hora': citaVoz.hora,
-    'campo-motivo': citaVoz.motivo || '—'
+    'campo-hora':  citaVoz.hora,
+    'campo-motivo':citaVoz.motivo || '—'
   };
-  for (const [id, val] of Object.entries(campos)) {
+  for (const [id,val] of Object.entries(campos)) {
     const el = document.getElementById(id);
     if (!el) continue;
-    const strong = el.querySelector('strong');
-    strong.textContent = val || '—';
-    el.classList.toggle('lleno', !!val && val !== '—');
+    const s = el.querySelector('strong');
+    if (s) { s.textContent = val || '—'; el.classList.toggle('lleno', !!val && val !== '—'); }
   }
 }
 
 function sincronizarFormularioManual() {
   const selEsp = document.getElementById('sel-esp');
-  const selMed = document.getElementById('sel-med');
+  if (!selEsp) return; // no autenticado: el formulario no existe en el DOM
+  const selMed   = document.getElementById('sel-med');
   const inpFecha = document.getElementById('inp-fecha');
-  const inpHora = document.getElementById('inp-hora');
-  const tipoInput = document.querySelector('#form-cita input[name="tipo"]');
-  const motivoInput = document.querySelector('#form-cita textarea[name="motivo"]');
+  const inpHora  = document.getElementById('inp-hora');
+  const tipoInp  = document.querySelector('#form-cita input[name="tipo"]');
+  const motivoInp= document.getElementById('motivo-inp');
 
   if (citaVoz.especialidad_id) {
     selEsp.value = citaVoz.especialidad_id;
-    if (citaVoz.medico_id) {
-      fetch(`/api/medicos/${citaVoz.especialidad_id}`).then(r => r.json()).then(data => {
-        selMed.innerHTML = '<option value="">— Selecciona un médico —</option>' +
-          data.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
-        selMed.value = citaVoz.medico_id;
-        if (citaVoz.fecha && citaVoz.hora) cargarHorarios();
-      });
+    if (citaVoz.medico_id && selMed) {
+      fetch(`/api/medicos/${citaVoz.especialidad_id}`)
+        .then(r => r.json())
+        .then(data => {
+          selMed.innerHTML = '<option value="">— Selecciona un médico —</option>' +
+            data.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+          selMed.value = citaVoz.medico_id;
+          if (citaVoz.fecha && citaVoz.hora) cargarHorarios();
+        });
     }
   }
-  if (tipoInput) tipoInput.value = 'voz';
-  if (citaVoz.fecha) inpFecha.value = citaVoz.fecha;
-  if (citaVoz.motivo && motivoInput) motivoInput.value = citaVoz.motivo;
-  if (citaVoz.hora) inpHora.value = citaVoz.hora;
+  if (tipoInp)                        tipoInp.value  = 'voz';
+  if (citaVoz.fecha   && inpFecha)    inpFecha.value = citaVoz.fecha;
+  if (citaVoz.motivo  && motivoInp)   motivoInp.value= citaVoz.motivo;
+  if (citaVoz.hora    && inpHora)     inpHora.value  = citaVoz.hora;
 }
 
 async function cargarMedicosVoz(espId) {
@@ -287,29 +590,20 @@ async function cargarMedicosVoz(espId) {
   citaVoz.medicos = await r.json();
   return citaVoz.medicos;
 }
-
 async function cargarHorariosVoz(medId, fecha) {
   const r = await fetch(`/api/horarios/${medId}/${fecha}`);
   citaVoz.horarios = await r.json();
   return citaVoz.horarios;
 }
 
-function detectarEspecialidad(t) {
-  const keywords = Object.entries(especialidades_kw).sort((a,b) => b[0].length - a[0].length);
-  for (const [kw, id] of keywords) {
-    if (t.includes(normalizar(kw))) return { id, nombre: ESPECIALIDADES_NOMBRE[id] || kw };
-  }
-  return null;
-}
-
 function detectarMedico(t) {
   if (!citaVoz.medicos.length) return null;
-  if (/primero|uno|1|opcion 1/.test(t)) return citaVoz.medicos[0];
-  if (/segundo|dos|2|opcion 2/.test(t) && citaVoz.medicos[1]) return citaVoz.medicos[1];
-  if (/tercero|tres|3|opcion 3/.test(t) && citaVoz.medicos[2]) return citaVoz.medicos[2];
+  if (/primero|uno|1/.test(t)) return citaVoz.medicos[0];
+  if (/segundo|dos|2/.test(t) && citaVoz.medicos[1]) return citaVoz.medicos[1];
+  if (/tercero|tres|3/.test(t) && citaVoz.medicos[2]) return citaVoz.medicos[2];
   for (const m of citaVoz.medicos) {
-    const partes = normalizar(m.nombre).split(' ');
-    if (partes.some(p => p.length > 3 && t.includes(p))) return m;
+    const ps = normalizar(m.nombre).split(' ');
+    if (ps.some(p => p.length > 3 && t.includes(p))) return m;
   }
   if (citaVoz.medicos.length === 1) return citaVoz.medicos[0];
   return null;
@@ -317,233 +611,249 @@ function detectarMedico(t) {
 
 function parsearFecha(t) {
   const hoy = new Date(); hoy.setHours(0,0,0,0);
-
   if (/\bhoy\b/.test(t)) return formatISO(hoy);
-  if (/pasado manana/.test(t)) { const d = new Date(hoy); d.setDate(d.getDate()+2); return formatISO(d); }
-  if (/manana/.test(t)) { const d = new Date(hoy); d.setDate(d.getDate()+1); return formatISO(d); }
-
-  for (const [mes, idx] of Object.entries(mesesMap)) {
-    const m1 = t.match(new RegExp('(\\d{1,2})\\s*(de\\s*)?' + mes));
-    const m2 = t.match(new RegExp(mes + '\\s*(\\d{1,2})'));
-    if (m1 || m2) {
-      const dia = parseInt((m1 || m2)[1]);
-      let d = new Date(hoy.getFullYear(), idx, dia);
-      if (d < hoy) d.setFullYear(d.getFullYear() + 1);
+  if (/pasado manana/.test(t)) { const d=new Date(hoy); d.setDate(d.getDate()+2); return formatISO(d); }
+  if (/manana/.test(t))        { const d=new Date(hoy); d.setDate(d.getDate()+1); return formatISO(d); }
+  for (const [mes,idx] of Object.entries(mesesMap)) {
+    const m1 = t.match(new RegExp('(\\d{1,2})\\s*(de\\s*)?'+mes));
+    const m2 = t.match(new RegExp(mes+'\\s*(\\d{1,2})'));
+    if (m1||m2) {
+      const dia = parseInt((m1||m2)[1]);
+      let d = new Date(hoy.getFullYear(),idx,dia);
+      if (d<hoy) d.setFullYear(d.getFullYear()+1);
       return formatISO(d);
     }
   }
-
   const iso = t.match(/(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-  const sl = t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if (sl) return `${sl[3]}-${sl[2].padStart(2,'0')}-${sl[1].padStart(2,'0')}`;
-  const corto = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
-  if (corto) {
-    let d = new Date(hoy.getFullYear(), parseInt(corto[2])-1, parseInt(corto[1]));
-    if (d < hoy) d.setFullYear(d.getFullYear()+1);
-    return formatISO(d);
-  }
+  const sl  = t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (sl)  return `${sl[3]}-${sl[2].padStart(2,'0')}-${sl[1].padStart(2,'0')}`;
+  const c   = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if (c) { let d=new Date(hoy.getFullYear(),parseInt(c[2])-1,parseInt(c[1])); if(d<hoy)d.setFullYear(d.getFullYear()+1); return formatISO(d); }
   return null;
 }
 
 function parsearHora(t) {
   for (const h of citaVoz.horarios) {
-    const hNorm = h.replace(':', ' ');
-    if (t.includes(h) || t.includes(hNorm)) return h;
+    if (t.includes(h) || t.includes(h.replace(':','  '))) return h;
   }
-  const entries = Object.entries(horasMap).sort((a,b) => b[0].length - a[0].length);
-  for (const [frase, hora] of entries) {
-    if (t.includes(frase) && citaVoz.horarios.includes(hora)) return hora;
-  }
+  const entries = Object.entries(horasMap).sort((a,b)=>b[0].length-a[0].length);
+  for (const [f,h] of entries) { if (t.includes(f) && citaVoz.horarios.includes(h)) return h; }
   const m = t.match(/(\d{1,2})\s*:\s*(\d{2})/);
-  if (m) {
-    const cand = `${m[1].padStart(2,'0')}:${m[2]}`;
-    if (citaVoz.horarios.includes(cand)) return cand;
-  }
-  if (citaVoz.horarios.length === 1) return citaVoz.horarios[0];
+  if (m) { const c=`${m[1].padStart(2,'0')}:${m[2]}`; if(citaVoz.horarios.includes(c)) return c; }
+  if (citaVoz.horarios.length===1) return citaVoz.horarios[0];
   return null;
 }
 
-function responderIA(texto, voz) {
-  addMsg('ia', texto);
-  hablar(voz || texto);
-}
+function responderIA(texto, voz) { addMsg('ia', texto); hablar(voz || texto); }
+function avanzarPaso(p) { pasoActual=p; actualizarPasosUI(); actualizarResumenUI(); sincronizarFormularioManual(); }
 
-function avanzarPaso(nuevoPaso) {
-  pasoActual = nuevoPaso;
-  actualizarPasosUI();
-  actualizarResumenUI();
-  sincronizarFormularioManual();
-}
-
+// ── Máquina de estados del bot ────────────────────────────────────────────────
 async function procesarVoz(texto) {
   addMsg('user', texto);
   const t = normalizar(texto);
 
-  if (/hola|buenos|buenas/.test(t) && pasoActual === 'especialidad' && !citaVoz.especialidad_id) {
-    responderIA('¡Hola! Vamos a agendar tu cita paso a paso. ¿Qué especialidad necesitas?',
-      'Hola. ¿Qué especialidad necesitas?');
+  // ── Estado 1: Pre-autenticación (usuarios NO autenticados) ─────────────────
+  if (pasoActual === 'inicio_auth') {
+    if (/\b(si|sí|tengo|cuenta|yes|sesion|sesión|login|acceso)\b/.test(t)) {
+      responderIA(
+        '¡Perfecto! Te llevaré a la página de inicio de sesión. ¡Hasta pronto!',
+        'Te llevo al inicio de sesión.'
+      );
+      setTimeout(() => { window.location.href = '/login'; }, 2200);
+    } else if (/\b(no|nuevo|nueva|registrar|registro|crear|quiero|cuenta nueva)\b/.test(t)) {
+      responderIA(
+        '¡Sin problema! Te llevaré al formulario de registro para crear tu cuenta.',
+        'Redirigiendo al registro.'
+      );
+      setTimeout(() => { window.location.href = '/registro'; }, 2200);
+    } else {
+      responderIA(
+        'Para continuar necesito saber: ¿ya tienes una cuenta en el hospital? Responde "sí" si ya tienes cuenta, o "no" si necesitas registrarte.',
+        'Responde sí si tienes cuenta, o no si necesitas registrarte.'
+      );
+    }
     return;
   }
 
+  // ── Estado 2: Selección de modo (autenticados) ─────────────────────────────
+  if (pasoActual === 'seleccion_modo') {
+    if (/\b(voz|microfono|micrófono|chat|asistente|hablar|hablando|ia|inteligente|artificial)\b/.test(t)) {
+      elegirModo('voz');
+    } else if (/\b(manual|formulario|llenar|rellenar|escribir|escribiendo|tradicional)\b/.test(t)) {
+      elegirModo('manual');
+      responderIA(
+        'De acuerdo, el formulario está listo. Puedes seguir usando este chat si tienes alguna duda.',
+        'Formulario manual listo.'
+      );
+    } else if (/\b(hola|buenos|buenas)\b/.test(t)) {
+      const sal = NOMBRE_USUARIO ? `, ${NOMBRE_USUARIO}` : '';
+      responderIA(
+        `¡Hola${sal}! ¿Cómo prefieres solicitar tu cita? Di "voz" para el asistente de voz, o "manual" para el formulario.`,
+        `Hola${sal}. ¿Voz o manual?`
+      );
+    } else {
+      responderIA(
+        'Di "voz" para que te guíe el asistente, o "manual" para el formulario paso a paso.',
+        'Di voz o manual.'
+      );
+    }
+    return;
+  }
+
+  // ── Saludos durante el flujo de cita ──────────────────────────────────────
+  if (/\b(hola|buenos|buenas)\b/.test(t) && pasoActual === 'especialidad' && !citaVoz.especialidad_id) {
+    responderIA('¡Hola! Cuéntame qué síntomas tienes o qué especialidad necesitas.','Hola. ¿Qué especialidad?');
+    return;
+  }
   if (/ayuda|que puedo|como funciona/.test(t)) {
-    const ayuda = {
-      especialidad: 'Di la especialidad, por ejemplo: pediatría o cardiología.',
-      medico: 'Di el nombre del médico o el número de la lista.',
-      fecha: 'Di la fecha, por ejemplo: mañana, o 20 de junio.',
-      hora: 'Di la hora disponible, por ejemplo: nueve y media o 10:00.',
-      motivo: 'Di el motivo de tu consulta, o di "ninguno" para omitir.',
-      confirmar: 'Di "sí confirmo" para registrar la cita, o "no" para corregir.'
+    const h = {
+      especialidad:'Cuéntame tus síntomas en lenguaje natural.',
+      confirmar_especialidad:'Di "sí" para continuar con la especialidad recomendada o "no" para elegir otra.',
+      medico:'Di el nombre del médico o el número de la lista.',
+      fecha:'Di la fecha, por ejemplo: mañana, o 20 de junio.',
+      hora:'Di la hora disponible.',
+      motivo:'Di el motivo de tu consulta, o "ninguno" para omitir.',
+      confirmar:'Di "sí confirmo" para registrar, o "no" para corregir.'
     };
-    responderIA(ayuda[pasoActual], ayuda[pasoActual]);
-    return;
+    responderIA(h[pasoActual] || '¿En qué puedo ayudarte?'); return;
   }
 
+  // ── Flujo de cita ──────────────────────────────────────────────────────────
   switch (pasoActual) {
 
     case 'especialidad': {
-      const esp = detectarEspecialidad(t);
-      if (!esp) {
-        responderIA('No identifiqué la especialidad. Di por ejemplo: pediatría, cardiología o traumatología.',
-          'Por favor dime la especialidad que necesitas.');
-        return;
-      }
-      citaVoz.especialidad_id = esp.id;
-      citaVoz.especialidad_nombre = esp.nombre;
-      const medicos = await cargarMedicosVoz(esp.id);
-
-      if (!medicos.length) {
-        responderIA(`No hay médicos disponibles en ${esp.nombre}. Elige otra especialidad.`,
-          'No hay médicos disponibles en esa especialidad.');
-        citaVoz.especialidad_id = null;
-        citaVoz.especialidad_nombre = '';
-        return;
+      // 1. Revisar si mencionó directamente una especialidad
+      let espEncontrada = null;
+      for (const [kw, id] of Object.entries(especialidades_kw)) {
+        if (t.includes(kw)) {
+          espEncontrada = id;
+          break;
+        }
       }
 
-      avanzarPaso('medico');
-      const lista = medicos.map((m,i) => `${i+1}. ${m.nombre}`).join('\n');
-      if (medicos.length === 1) {
-        citaVoz.medico_id = medicos[0].id;
-        citaVoz.medico_nombre = medicos[0].nombre;
-        avanzarPaso('fecha');
-        responderIA(`Perfecto, ${esp.nombre}. Solo hay un médico: ${medicos[0].nombre}. ¿Para qué fecha quieres la cita? Puedes decir mañana o un día como 20 de junio.`,
-          `Médico asignado. ¿Para qué fecha quieres la cita?`);
-      } else {
-        responderIA(`Excelente, ${esp.nombre}. Estos son los médicos disponibles:\n${lista}\n¿Con cuál deseas atenderte?`,
-          `Elige un médico. ${medicos.map((m,i)=>`opción ${i+1}, ${m.nombre}`).join('. ')}`);
+      if (espEncontrada) {
+        // Asignar especialidad directamente y saltar al paso 'medico'
+        citaVoz.especialidad_id = espEncontrada;
+        citaVoz.especialidad_nombre = ESPECIALIDADES_NOMBRE[espEncontrada] || 'Especialidad seleccionada';
+        responderIA(`Has seleccionado ${citaVoz.especialidad_nombre}. Buscando médicos disponibles...`, `Especialidad ${citaVoz.especialidad_nombre}.`);
+        avanzarPaso('medico');
+        cargarMedicosVoz(citaVoz.especialidad_id).then(meds => {
+          if(!meds.length) {
+            responderIA('No hay médicos disponibles para esta especialidad.', 'No hay médicos disponibles.');
+            setTimeout(() => irAManual(), 2000);
+          } else {
+            let ns = meds.map((m, i) => `${i+1}. ${m.nombre}`).join('<br>');
+            let s  = meds.map((m, i) => `${i+1}, ${m.nombre}`).join('. ');
+            addMsgHtml('ia', `Médicos disponibles:<br>${ns}<br><br>¿A cuál eliges? (Dime el número o el nombre)`);
+            hablar(`Tengo ${meds.length} médicos disponibles. ${s}. ¿A cuál eliges?`);
+          }
+        });
+        return;
       }
+
+      // 2. Si no es directo, usar la API de Inteligencia Artificial para clasificar síntomas
+      setStatus('Clasificando síntomas...');
+      try {
+        const res  = await fetch('/api/clasificar-sintomas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texto})});
+        const data = await res.json();
+        tempRecomendacion = data; pasoActual = 'confirmar_especialidad'; actualizarPasosUI();
+        let h = `Según lo que describes, te recomiendo <strong>${data.especialidad}</strong> (${Math.round(data.confianza*100)}% de confianza).<br><br>¿Deseas continuar con esta especialidad?<br><br>`;
+        h += `<div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="btn-primary" style="padding:6px 12px;font-size:.8rem;border-radius:12px;" onclick="confirmarEspecialidad(true)">Sí, continuar</button>
+          <button type="button" class="tbtn tbtn-off" style="padding:6px 12px;font-size:.8rem;border-radius:12px;" onclick="confirmarEspecialidad(false)">Elegir otra manualmente</button>
+        </div>`;
+        addMsgHtml('ia', h);
+        hablar(`Según lo que describes, te recomiendo ${data.especialidad}. ¿Deseas continuar con esta especialidad?`);
+      } catch(e) {
+        console.error(e);
+        responderIA('Hubo un error al clasificar los síntomas. Intenta de nuevo o usa el formulario manual.','Error. Intenta de nuevo o usa el formulario.');
+        setTimeout(() => irAManual(), 1500);
+      }
+      return;
+    }
+
+    case 'confirmar_especialidad': {
+      if (/\b(si|sí|s|confirmar|continuar|correcto|dale|ok|esta bien|de acuerdo|perfecto|claro|por supuesto|acepto|va|adelante|ya|obvio|asi es)\b/.test(t)) confirmarEspecialidad(true);
+      else if (/\b(no|cancelar|corregir|cambiar|otra|manual|falso|equivocado|nada que ver|retroceder|atras)\b/.test(t)) confirmarEspecialidad(false);
+      else responderIA('Di "sí" para continuar o "no" para elegir otra especialidad.','Responde sí o no.');
       return;
     }
 
     case 'medico': {
       const med = detectarMedico(t);
       if (!med) {
-        const lista = citaVoz.medicos.map((m,i) => `${i+1}. ${m.nombre}`).join(', ');
-        responderIA(`No identifiqué al médico. Opciones: ${lista}`,
-          'Por favor di el nombre del médico o el número de la opción.');
+        const lista = citaVoz.medicos.map((m,i)=>`${i+1}. ${m.nombre}`).join(', ');
+        responderIA(`No identifiqué al médico. Opciones: ${lista}`,'Di el nombre o número del médico.');
         return;
       }
-      citaVoz.medico_id = med.id;
-      citaVoz.medico_nombre = med.nombre;
+      citaVoz.medico_id = med.id; citaVoz.medico_nombre = med.nombre;
       avanzarPaso('fecha');
-      responderIA(`Muy bien, cita con ${med.nombre}. ¿Para qué fecha? Puedes decir mañana, pasado mañana, o un día como 15 de junio.`,
-        '¿Para qué fecha deseas la cita?');
+      responderIA(`Cita con ${med.nombre}. ¿Para qué fecha? Di mañana, pasado mañana, o un día como 15 de junio.`,'¿Para qué fecha?');
       return;
     }
 
     case 'fecha': {
       const fechaISO = parsearFecha(t);
-      if (!fechaISO || fechaISO < today) {
-        responderIA('No entendí la fecha o es una fecha pasada. Di por ejemplo: mañana, o 20 de junio.',
-          'Por favor di una fecha válida, como mañana o 20 de junio.');
-        return;
-      }
-      citaVoz.fecha = fechaISO;
-      citaVoz.fecha_legible = formatFechaLegible(fechaISO);
-      const horarios = await cargarHorariosVoz(citaVoz.medico_id, fechaISO);
-
-      if (!horarios.length) {
-        responderIA(`No hay horarios libres el ${citaVoz.fecha_legible}. Prueba con otra fecha.`,
-          'No hay horarios disponibles ese día. Di otra fecha.');
-        citaVoz.fecha = null;
-        citaVoz.fecha_legible = '';
-        return;
-      }
-
-      citaVoz.horarios = horarios;
-      avanzarPaso('hora');
-      const listaH = horarios.join(', ');
-      responderIA(`Fecha ${citaVoz.fecha_legible}. Horarios disponibles: ${listaH}. ¿Qué hora prefieres?`,
-        `Horarios disponibles: ${listaH}. ¿Qué hora eliges?`);
+      if (!fechaISO || fechaISO < today) { responderIA('No entendí la fecha o es pasada. Di por ejemplo: mañana, o 20 de junio.','Di una fecha válida.'); return; }
+      citaVoz.fecha = fechaISO; citaVoz.fecha_legible = formatFechaLegible(fechaISO);
+      const hs = await cargarHorariosVoz(citaVoz.medico_id, fechaISO);
+      if (!hs.length) { responderIA(`No hay horarios el ${citaVoz.fecha_legible}. Prueba otra fecha.`,'No hay horarios. Di otra fecha.'); citaVoz.fecha=null; citaVoz.fecha_legible=''; return; }
+      citaVoz.horarios = hs; avanzarPaso('hora');
+      responderIA(`Fecha ${citaVoz.fecha_legible}. Horarios disponibles: ${hs.join(', ')}. ¿Qué hora prefieres?`,`Horarios: ${hs.join(', ')}. ¿Qué hora?`);
       return;
     }
 
     case 'hora': {
       const hora = parsearHora(t);
-      if (!hora) {
-        responderIA(`No identifiqué la hora. Disponibles: ${citaVoz.horarios.join(', ')}`,
-          'Di una hora de la lista disponible.');
-        return;
-      }
-      citaVoz.hora = hora;
-      avanzarPaso('motivo');
-      responderIA(`Hora ${hora} reservada. ¿Cuál es el motivo de tu consulta? Puedes decir "ninguno" si prefieres omitirlo.`,
-        '¿Cuál es el motivo de tu consulta? Di ninguno para omitir.');
+      if (!hora) { responderIA(`No identifiqué la hora. Disponibles: ${citaVoz.horarios.join(', ')}`,'Di una hora de la lista.'); return; }
+      citaVoz.hora = hora; avanzarPaso('motivo');
+      responderIA(`Hora ${hora} reservada. ¿Cuál es el motivo? Di "ninguno" para omitir.`,'¿Cuál es el motivo? Di ninguno para omitir.');
       return;
     }
 
     case 'motivo': {
-      if (/^(ninguno|nada|omitir|saltar|sin motivo)$/.test(t) || t === 'no') {
-        citaVoz.motivo = '';
-      } else {
-        citaVoz.motivo = texto.trim();
-      }
+      citaVoz.motivo = /^(ninguno|nada|omitir|saltar|sin motivo)$/.test(t)||t==='no' ? '' : texto.trim();
       avanzarPaso('confirmar');
-      const resumen = `Especialidad: ${citaVoz.especialidad_nombre}. Médico: ${citaVoz.medico_nombre}. Fecha: ${citaVoz.fecha_legible}. Hora: ${citaVoz.hora}.${citaVoz.motivo ? ' Motivo: '+citaVoz.motivo+'.' : ''}`;
-      responderIA(`${resumen}\n¿Confirmas tu cita? Di "sí confirmo" o "no" para corregir.`,
-        `Resumen de tu cita. ${resumen} ¿Confirmas? Di sí confirmo.`);
+      const res = `Especialidad: ${citaVoz.especialidad_nombre}. Médico: ${citaVoz.medico_nombre}. Fecha: ${citaVoz.fecha_legible}. Hora: ${citaVoz.hora}.${citaVoz.motivo?' Motivo: '+citaVoz.motivo+'.':''}`;
+      responderIA(`${res}\n¿Confirmas tu cita? Di "sí confirmo" o "no" para corregir.`,`${res}. ¿Confirmas? Di sí confirmo.`);
       return;
     }
 
     case 'confirmar': {
-      if (/^(si|sí|confirmo|confirmar|correcto|dale|ok|esta bien|de acuerdo)/.test(t) || t.includes('si confirmo') || t.includes('sí confirmo')) {
-        await registrarCitaVoz();
-        return;
+      if (/^(si|sí|confirmo|confirmar|correcto|dale|ok|esta bien)/.test(t)||t.includes('si confirmo')||t.includes('sí confirmo')) {
+        await registrarCitaVoz(); return;
       }
       if (/^(no|cancelar|corregir|cambiar)/.test(t)) {
-        responderIA('De acuerdo. ¿Qué deseas cambiar? Di: especialidad, médico, fecha, hora o motivo.',
-          '¿Qué dato quieres cambiar? Di especialidad, médico, fecha, hora o motivo.');
-        pasoActual = 'corregir';
-        return;
+        responderIA('¿Qué deseas cambiar? Di: especialidad, médico, fecha, hora o motivo.','¿Qué cambias?');
+        pasoActual='corregir'; return;
       }
-      responderIA('Di "sí confirmo" para registrar la cita, o "no" para corregir algún dato.',
-        'Di sí confirmo para registrar, o no para corregir.');
+      responderIA('Di "sí confirmo" para registrar, o "no" para corregir algún dato.','Di sí confirmo o no.');
       return;
     }
 
     case 'corregir': {
-      if (t.includes('especialidad')) { reiniciarDesde('especialidad'); responderIA('De acuerdo, empecemos de nuevo. ¿Qué especialidad necesitas?', '¿Qué especialidad necesitas?'); }
-      else if (t.includes('medico') || t.includes('médico')) { reiniciarDesde('medico'); responderIA('¿Con qué médico deseas la cita?', '¿Qué médico prefieres?'); }
-      else if (t.includes('fecha')) { reiniciarDesde('fecha'); responderIA('¿Para qué fecha?', '¿Qué fecha prefieres?'); }
-      else if (t.includes('hora')) { reiniciarDesde('hora'); responderIA(`Horarios: ${citaVoz.horarios.join(', ')}. ¿Qué hora?`, '¿Qué hora prefieres?'); }
-      else if (t.includes('motivo')) { avanzarPaso('motivo'); responderIA('¿Cuál es el motivo de consulta?', 'Di el motivo de tu consulta.'); }
-      else { responderIA('Di qué quieres cambiar: especialidad, médico, fecha, hora o motivo.', 'Di qué dato quieres corregir.'); }
+      if (t.includes('especialidad'))                     { reiniciarDesde('especialidad'); responderIA('¿Qué especialidad necesitas?','¿Qué especialidad?'); }
+      else if (t.includes('medico')||t.includes('médico')){ reiniciarDesde('medico');       responderIA('¿Con qué médico?','¿Qué médico?'); }
+      else if (t.includes('fecha'))                       { reiniciarDesde('fecha');        responderIA('¿Para qué fecha?','¿Qué fecha?'); }
+      else if (t.includes('hora'))                        { reiniciarDesde('hora');         responderIA(`Horarios: ${citaVoz.horarios.join(', ')}. ¿Qué hora?`,'¿Qué hora?'); }
+      else if (t.includes('motivo'))                      { avanzarPaso('motivo');          responderIA('¿Cuál es el motivo?','¿El motivo?'); }
+      else responderIA('Di qué quieres cambiar: especialidad, médico, fecha, hora o motivo.','¿Qué cambias?');
       return;
     }
   }
 }
 
 function reiniciarDesde(paso) {
-  if (paso === 'especialidad') {
-    citaVoz = { especialidad_id:null, especialidad_nombre:'', medico_id:null, medico_nombre:'',
-      fecha:null, fecha_legible:'', hora:null, motivo:'', medicos:[], horarios:[] };
-  } else if (paso === 'medico') {
-    citaVoz.medico_id = null; citaVoz.medico_nombre = '';
-    citaVoz.fecha = null; citaVoz.fecha_legible = ''; citaVoz.hora = null; citaVoz.horarios = [];
-  } else if (paso === 'fecha') {
-    citaVoz.fecha = null; citaVoz.fecha_legible = ''; citaVoz.hora = null; citaVoz.horarios = [];
-  } else if (paso === 'hora') {
-    citaVoz.hora = null;
+  if (paso==='especialidad') {
+    citaVoz = {especialidad_id:null,especialidad_nombre:'',medico_id:null,medico_nombre:'',fecha:null,fecha_legible:'',hora:null,motivo:'',medicos:[],horarios:[]};
+  } else if (paso==='medico') {
+    citaVoz.medico_id=null; citaVoz.medico_nombre='';
+    citaVoz.fecha=null; citaVoz.fecha_legible=''; citaVoz.hora=null; citaVoz.horarios=[];
+  } else if (paso==='fecha') {
+    citaVoz.fecha=null; citaVoz.fecha_legible=''; citaVoz.hora=null; citaVoz.horarios=[];
+  } else if (paso==='hora') {
+    citaVoz.hora=null;
   }
   avanzarPaso(paso);
 }
@@ -552,240 +862,221 @@ async function registrarCitaVoz() {
   sincronizarFormularioManual();
   const fd = new FormData();
   fd.append('especialidad_id', citaVoz.especialidad_id);
-  fd.append('medico_id', citaVoz.medico_id);
-  fd.append('fecha', citaVoz.fecha);
-  fd.append('hora', citaVoz.hora);
-  fd.append('motivo', citaVoz.motivo || '');
-  fd.append('tipo', 'voz');
-
-  addMsg('ia', 'Registrando tu cita...');
-  setStatus('Guardando cita...');
-
+  fd.append('medico_id',       citaVoz.medico_id);
+  fd.append('fecha',           citaVoz.fecha);
+  fd.append('hora',            citaVoz.hora);
+  fd.append('motivo',          citaVoz.motivo || '');
+  fd.append('tipo',            'voz');
+  addMsg('ia','Registrando tu cita...'); setStatus('Guardando cita...');
   try {
-    const r = await fetch('/solicitar-cita', { method: 'POST', body: fd, credentials: 'same-origin', redirect: 'follow' });
+    const r = await fetch('/solicitar-cita',{method:'POST',body:fd,credentials:'same-origin',redirect:'follow'});
     if (r.ok) {
-      addMsg('ia', '¡Cita registrada exitosamente! Redirigiendo a tu panel...');
+      addMsg('ia','¡Cita registrada exitosamente! Redirigiendo a tu panel...');
       hablar('¡Listo! Tu cita fue registrada.');
-      setTimeout(() => { window.location.href = '/dashboard'; }, 2500);
+      setTimeout(()=>{window.location.href='/dashboard';},2500);
     } else {
-      responderIA('Hubo un problema al registrar. Verifica los datos en el formulario manual.',
-        'No se pudo registrar. Revisa el formulario manual.');
+      responderIA('Hubo un problema al registrar. Intenta con el formulario manual.','No se pudo registrar. Usa el formulario.');
     }
-  } catch (e) {
-    responderIA('Error de conexión. Intenta confirmar desde el formulario manual.', 'Error al registrar la cita.');
+  } catch(e) {
+    responderIA('Error de conexión. Intenta desde el formulario manual.','Error al registrar.');
   }
 }
 
-function crearReconocimiento() {
-  if (!SpeechRecognition) {
-    alert('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome.');
-    return null;
+async function confirmarEspecialidad(aceptar) {
+  if (aceptar && tempRecomendacion) {
+    citaVoz.especialidad_id    = tempRecomendacion.especialidad_id;
+    citaVoz.especialidad_nombre = tempRecomendacion.especialidad;
+    addMsg('user','Sí, continuar');
+    const medicos = await cargarMedicosVoz(citaVoz.especialidad_id);
+    if (!medicos.length) {
+      responderIA(`No hay médicos en ${citaVoz.especialidad_nombre}. Elige otra especialidad en el formulario.`);
+      setTimeout(()=>irAManual(),2000); return;
+    }
+    avanzarPaso('medico');
+    if (medicos.length===1) {
+      citaVoz.medico_id=medicos[0].id; citaVoz.medico_nombre=medicos[0].nombre; avanzarPaso('fecha');
+      responderIA(`Médico: ${medicos[0].nombre}. ¿Para qué fecha? Di mañana o un día como 20 de junio.`,'¿Para qué fecha?');
+    } else {
+      const lista = medicos.map((m,i)=>`${i+1}. ${m.nombre}`).join('\n');
+      responderIA(`Médicos disponibles:\n${lista}\n¿Con cuál deseas?`,'Elige un médico.');
+    }
+  } else {
+    addMsg('user','Elegir otra manualmente');
+    responderIA('De acuerdo. Te llevo al formulario para que elijas la especialidad.','Redirigiendo al formulario.');
+    setTimeout(()=>irAManual(),1500);
   }
+}
 
+// ── Reconocimiento de voz ─────────────────────────────────────────────────────
+function crearReconocimiento() {
+  if (!SpeechRecognition) { alert('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome.'); return null; }
   const r = new SpeechRecognition();
-  r.lang = 'es-PE';
-  r.continuous = false;
-  r.interimResults = true;
-
-  r.onstart = () => {
-    actualizarMicUI();
-    setStatus('Escuchando... habla ahora.');
+  r.lang='es-PE'; r.continuous=false; r.interimResults=true;
+  r.onstart  = ()=>{ actualizarMicUI(); setStatus('Escuchando... habla ahora.'); };
+  r.onresult = e=>{
+    if (botHablando||!micActivo) return;
+    let final='',interim='';
+    for (let i=e.resultIndex;i<e.results.length;i++) {
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    const tr=document.getElementById('transcript'); if(tr) tr.textContent=final||interim||'...';
+    const txt=final.trim();
+    if (txt&&txt!==ultimoTextoProcesado) { ultimoTextoProcesado=txt; apagarMicrofono(); procesarVoz(txt); }
   };
-
-  r.onresult = e => {
-    if (botHablando || !micActivo) return;
-
-    let final = '', interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript;
-      else interim += e.results[i][0].transcript;
-    }
-    document.getElementById('transcript').textContent = final || interim || '...';
-
-    const texto = final.trim();
-    if (texto && texto !== ultimoTextoProcesado) {
-      ultimoTextoProcesado = texto;
-      apagarMicrofono();
-      procesarVoz(texto);
-    }
-  };
-
-  r.onerror = e => {
-    if (e.error === 'aborted' || e.error === 'no-speech') {
-      if (micActivo) {
-        apagarMicrofono();
-        setStatus('No te escuché. Presiona el micrófono e intenta de nuevo.');
-      }
-      return;
-    }
-
+  r.onerror = e=>{
+    if (e.error==='aborted'||e.error==='no-speech') { if(micActivo){apagarMicrofono();setStatus('No te escuché. Presiona el micrófono e intenta de nuevo.');} return; }
     apagarMicrofono();
-
-    if (e.error === 'network') {
-      setStatus('Servicio de voz no disponible. Usa Google Chrome con internet, o desactiva Shields en Brave.');
-      return;
-    }
-
-    if (e.error === 'not-allowed') {
-      setStatus('Permiso de micrófono denegado. Actívalo en la configuración del navegador.');
-      return;
-    }
-
+    if (e.error==='network')     { setStatus('Servicio de voz no disponible. Usa Chrome con internet.'); return; }
+    if (e.error==='not-allowed') { setStatus('Permiso de micrófono denegado. Actívalo en la configuración del navegador.'); return; }
     setStatus('Error de reconocimiento. Presiona el micrófono para intentar de nuevo.');
   };
-
-  r.onend = () => {
-    if (micActivo && !botHablando) {
-      apagarMicrofono();
-      setStatus('Presiona el micrófono para volver a hablar.');
-    }
-  };
-
+  r.onend = ()=>{ if(micActivo&&!botHablando){apagarMicrofono();setStatus('Presiona el micrófono para volver a hablar.');} };
   return r;
 }
 
 function actualizarMicUI() {
-  const btn = document.getElementById('micBtn');
-  const icon = document.getElementById('micIcon');
-  const escuchando = micActivo && !botHablando;
-
-  btn.classList.toggle('listening', escuchando);
+  const btn=document.getElementById('micBtn');
+  const icon=document.getElementById('micIcon');
+  if (!btn||!icon) return;
+  const esc = micActivo && !botHablando;
+  btn.classList.toggle('listening',esc);
   btn.classList.toggle('speaking', botHablando);
   btn.disabled = botHablando;
-  icon.className = escuchando ? 'fas fa-stop' : 'fas fa-microphone';
+  icon.className = esc ? 'fas fa-stop' : 'fas fa-microphone';
 }
-
-function destruirReconocimiento() {
-  if (recognition) {
-    try { recognition.abort(); } catch (e) {}
-    recognition = null;
-  }
-}
-
-function apagarMicrofono() {
-  micActivo = false;
-  if (recognition) {
-    try { recognition.stop(); } catch (e) {}
-  }
-  destruirReconocimiento();
+function destruirReconocimiento() { if(recognition){try{recognition.abort();}catch(e){}recognition=null;} }
+function apagarMicrofono()        { micActivo=false; if(recognition){try{recognition.stop();}catch(e){}} destruirReconocimiento(); actualizarMicUI(); }
+function encenderMicrofono()      {
+  if (botHablando) return;
+  destruirReconocimiento(); ultimoTextoProcesado=''; micActivo=true;
+  recognition=crearReconocimiento(); if(!recognition){micActivo=false;return;}
   actualizarMicUI();
+  try { recognition.start(); } catch(e) { apagarMicrofono(); setStatus('No se pudo activar el micrófono. Presiona de nuevo.'); }
 }
-
-function encenderMicrofono() {
-  if (!isVozTabActiva() || botHablando) return;
-
-  destruirReconocimiento();
-  ultimoTextoProcesado = '';
-  micActivo = true;
-  recognition = crearReconocimiento();
-  if (!recognition) {
-    micActivo = false;
-    return;
-  }
-
-  actualizarMicUI();
-  try {
-    recognition.start();
-  } catch (e) {
-    apagarMicrofono();
-    setStatus('No se pudo activar el micrófono. Presiona de nuevo.');
-  }
-}
-
 function detenerAsistenteVoz() {
-  micActivo = false;
-  botHablando = false;
-  ultimoTextoProcesado = '';
-  if (window.speechSynthesis) window.speechSynthesis.cancel();
-  destruirReconocimiento();
-  actualizarMicUI();
+  micActivo=false; botHablando=false; ultimoTextoProcesado='';
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  destruirReconocimiento(); actualizarMicUI();
 }
-
 function toggleVoz() {
   if (botHablando) return;
-
-  if (micActivo) {
-    apagarMicrofono();
-    setStatus('Micrófono apagado. Presiona para volver a hablar.');
-    return;
-  }
-
+  if (micActivo) { apagarMicrofono(); setStatus('Micrófono apagado. Presiona para volver a hablar.'); return; }
   encenderMicrofono();
 }
+function setStatus(msg) { const el=document.getElementById('voz-status'); if(el) el.textContent=msg; }
+function isVozTabActiva() { return true; } // el bot siempre está visible
 
-function setStatus(msg) {
-  document.getElementById('voz-status').textContent = msg;
-}
-
-function isVozTabActiva() {
-  return document.getElementById('panel-voz').classList.contains('active');
-}
-
-function hablar(texto) {
-  apagarMicrofono();
-  botHablando = true;
-  actualizarMicUI();
-  setStatus('El asistente está hablando...');
-
+function hablar(texto, autoMic) {
+  // autoMic: si es true (por defecto), activa el micrófono al terminar de hablar
+  if (autoMic === undefined) autoMic = true;
+  apagarMicrofono(); botHablando=true; actualizarMicUI(); setStatus('El asistente está hablando...');
   if (!window.speechSynthesis) {
-    botHablando = false;
-    actualizarMicUI();
-    setStatus('Presiona el micrófono para responder.');
+    botHablando=false; actualizarMicUI();
+    setStatus('Escribe tu respuesta en el campo de texto.');
     return;
   }
-
   window.speechSynthesis.cancel();
-
-  const u = new SpeechSynthesisUtterance(texto);
-  u.lang = 'es-PE';
-  u.rate = 0.95;
-
-  u.onend = () => {
-    botHablando = false;
-    actualizarMicUI();
-    setStatus('Presiona el micrófono para responder.');
+  const u=new SpeechSynthesisUtterance(texto); u.lang='es-PE'; u.rate=0.95;
+  u.onend  = ()=>{
+    botHablando=false; actualizarMicUI();
+    if (autoMic && SpeechRecognition) {
+      // Activar micrófono automáticamente para que el usuario ciego pueda responder
+      setStatus('Escuchando tu respuesta...');
+      setTimeout(()=> encenderMicrofono(), 400);
+    } else {
+      setStatus('Escribe tu respuesta en el campo de texto.');
+    }
   };
-
-  u.onerror = () => {
-    botHablando = false;
-    actualizarMicUI();
-    setStatus('No se pudo reproducir la voz. Presiona el micrófono para intentar de nuevo.');
-  };
-
+  u.onerror= ()=>{ botHablando=false; actualizarMicUI(); setStatus('No se pudo reproducir la voz. Escribe tu respuesta.'); };
   window.speechSynthesis.speak(u);
 }
 
 function addMsg(role, text) {
-  const box = document.getElementById('chatBox');
-  const d = document.createElement('div');
-  d.className = `msg ${role}`;
-  d.textContent = text;
-  box.appendChild(d);
-  box.scrollTop = box.scrollHeight;
+  const box=document.getElementById('chatBox'); if(!box) return;
+  const d=document.createElement('div'); d.className=`msg ${role}`; d.textContent=text;
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+function addMsgHtml(role, html) {
+  const box=document.getElementById('chatBox'); if(!box) return;
+  const d=document.createElement('div'); d.className=`msg ${role}`; d.innerHTML=html;
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+
+function enviarTextoChat() {
+  const inp=document.getElementById('chatInput'); if(!inp) return;
+  const txt=inp.value.trim(); if(!txt) return;
+  inp.value=''; procesarVoz(txt);
+}
+
+function mostrarMensajeInicial() {
+  const botActivo = sessionStorage.getItem('botActivo') === 'true';
+  if (!AUTENTICADO) {
+    const msgTexto = 'Hola! Soy el asistente virtual del Hospital Carlos Lanfranco La Hoz. ' +
+      'Para solicitar una cita médica necesitas tener una cuenta. ' +
+      '¿Ya tienes una cuenta? Di "sí" si ya tienes cuenta, ' +
+      'o "no" si necesitas crear una nueva.';
+    const msgVoz = 'Hola! Soy el asistente virtual del Hospital Carlos Lanfranco La Hoz. ' +
+      'Para solicitar una cita, necesitas tener una cuenta. ' +
+      '¿Ya tienes una cuenta? Di sí, si ya tienes cuenta. O di no, si necesitas crear una nueva.';
+    addMsg('ia', msgTexto);
+    if (botActivo) setTimeout(() => hablar(msgVoz, true), 800);
+  } else {
+    const sal = NOMBRE_USUARIO ? `, ${NOMBRE_USUARIO}` : '';
+    const msgTexto = `Hola${sal}! ¿Cómo prefieres solicitar tu cita hoy? ` +
+      'Di "voz" para que te guíe el asistente paso a paso, ' +
+      'o "manual" para llenar el formulario tú mismo. ' +
+      'También puedes hacer clic en una de las opciones de abajo.';
+    const msgVoz = `Hola${sal}! ¿Cómo prefieres solicitar tu cita hoy? ` +
+      'Di voz, para que te guíe el asistente paso a paso. ' +
+      'O di manual, para llenar el formulario tú mismo.';
+    addMsg('ia', msgTexto);
+    if (botActivo) setTimeout(() => hablar(msgVoz, true), 800);
+  }
 }
 
 function resetChat() {
   detenerAsistenteVoz();
-  pasoActual = 'especialidad';
-  citaVoz = { especialidad_id:null, especialidad_nombre:'', medico_id:null, medico_nombre:'',
-    fecha:null, fecha_legible:'', hora:null, motivo:'', medicos:[], horarios:[] };
-  actualizarPasosUI();
-  actualizarResumenUI();
-  document.getElementById('chatBox').innerHTML =
-    '<div class="msg ia">Hola, soy el asistente del Hospital Lanfranco La Hoz. Te guiaré paso a paso para agendar tu cita. ¿Qué especialidad necesitas?</div>';
-  document.getElementById('transcript').textContent = 'Presiona el micrófono y habla...';
+  pasoActual = AUTENTICADO ? 'seleccion_modo' : 'inicio_auth';
+  tempRecomendacion = null;
+  citaVoz = {especialidad_id:null,especialidad_nombre:'',medico_id:null,medico_nombre:'',fecha:null,fecha_legible:'',hora:null,motivo:'',medicos:[],horarios:[]};
+  actualizarPasosUI(); actualizarResumenUI();
+  const box=document.getElementById('chatBox'); if(box) box.innerHTML='';
+  mostrarMensajeInicial();
+  const tr=document.getElementById('transcript'); if(tr) tr.textContent='O presiona el micrófono para hablar...';
   setStatus('Presiona el micrófono para empezar.');
 }
 
 function mostrarFlash(msg) {
-  const d = document.createElement('div');
-  d.className = 'flash success';
-  d.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
-  document.querySelector('.flash-container').prepend(d);
-  setTimeout(() => d.remove(), 4000);
+  const c=document.querySelector('.flash-container'); if(!c) return;
+  const d=document.createElement('div'); d.className='flash success';
+  d.innerHTML=`<i class="fas fa-check-circle"></i> ${msg}`;
+  c.prepend(d); setTimeout(()=>d.remove(),4000);
 }
 
-actualizarPasosUI();
-actualizarResumenUI();
+// ── Inicialización ────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  // 1. Mensaje inicial del bot — aria-live="polite" lo anuncia a lectores de pantalla
+  mostrarMensajeInicial();
+
+  // 2. Inicializar UI de pasos y resumen del flujo de voz
+  actualizarPasosUI();
+  actualizarResumenUI();
+
+  // 3. Ocultar paneles de contenido hasta que el usuario elija (solo autenticados)
+{% if autenticado %}
+  const pm = document.getElementById('panel-manual');
+  const pv = document.getElementById('panel-voz');
+  if (pm) pm.classList.add('hidden');
+  if (pv) pv.classList.add('hidden');
+{% endif %}
+
+  // 4. Auto-focus en el campo de chat para accesibilidad de teclado y lectores de pantalla
+  //    350ms de demora para que el lector lea primero el h1 y el mensaje del bot.
+  setTimeout(function () {
+    const ci = document.getElementById('chatInput');
+    if (ci) ci.focus();
+  }, 350);
+});
 </script>
 {% endblock %}
