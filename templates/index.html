@@ -306,14 +306,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } else {
                 // Si no se entendió, se repite
-                hablarConfirmacion("No te entendí bien. Por favor, di voz o manual.", function() {
+                hablarConfirmacion("No te entendí bien. Por favor, di mediante voz o de forma manual.", function() {
                     setTimeout(() => encenderMicrofonoInicio(), 500);
                 });
             }
         };
         recognition.onerror = function(e) {
             if(e.error === 'no-speech') {
-                hablarConfirmacion("No escuché tu respuesta. Di voz o manual.", function() {
+                hablarConfirmacion("No escuché tu respuesta. Di mediante voz o de forma manual.", function() {
                     setTimeout(() => encenderMicrofonoInicio(), 500);
                 });
             }
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Cancelar cualquier audio pendiente
         window.speechSynthesis.cancel();
         
-        const texto = "Bienvenido al Hospital Carlos Lanfranco La Hoz. ¿Deseas solicitar una cita médica mediante voz, o de forma manual? Di voz, o manual.";
+        const texto = "Bienvenido al Hospital Carlos Lanfranco La Hoz. ¿Deseas solicitar una cita médica mediante voz, o de forma manual? Di mediante voz, o de forma manual.";
         const u = new SpeechSynthesisUtterance(texto);
         u.lang = 'es-PE';
         u.rate = 0.95;
