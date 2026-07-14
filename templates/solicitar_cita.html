@@ -129,80 +129,22 @@
   {% endif %}
 
   {% if autenticado %}
-  <!-- ══════ SELECCIÓN VISUAL (solo autenticados)
-       Complemento para usuarios videntes. El bot hace lo mismo por voz/texto. -->
-  <div
-    id="pantalla-eleccion"
-    aria-label="Elige cómo deseas solicitar tu cita"
-  >
-    <p class="eleccion-subtitle">
-      O elige directamente con un clic (también puedes responder al asistente de arriba):
-    </p>
-    <div class="eleccion-grid">
-
-      <button
-        type="button"
-        class="eleccion-card"
-        id="btn-elegir-voz"
-        onclick="elegirModo('voz')"
-        aria-label="Solicitar cita con el asistente de voz o chat de inteligencia artificial"
-      >
-        <div class="eleccion-icono icono-voz" aria-hidden="true">
-          <i class="fas fa-robot"></i>
-        </div>
-        <h2>Asistente de Voz / Chat</h2>
-        <p>Describe tus síntomas hablando o escribiendo. La IA te recomienda la especialidad.</p>
-        <span class="eleccion-badge badge-voz">✨ Recomendado</span>
-      </button>
-
-      <button
-        type="button"
-        class="eleccion-card"
-        id="btn-elegir-manual"
-        onclick="elegirModo('manual')"
-        aria-label="Solicitar cita llenando el formulario manual paso a paso"
-      >
-        <div class="eleccion-icono icono-manual" aria-hidden="true">
-          <i class="fas fa-clipboard-list"></i>
-        </div>
-        <h2>Formulario Manual</h2>
-        <p>Selecciona directamente especialidad, médico, fecha y hora disponible.</p>
-        <span class="eleccion-badge">📋 Tradicional</span>
-      </button>
-
-    </div>
-  </div>
-
-  <!-- Tabs ocultos visualmente — accesibilidad de teclado y ARIA -->
+  <!-- ══════ TABS DE SELECCIÓN ══════ -->
   <div class="tabs" role="tablist" aria-label="Tipo de solicitud de cita">
+    <button type="button" class="tab active" role="tab" aria-selected="true"
+            aria-controls="panel-voz" id="tab-voz"
+            onclick="elegirModo('voz')">
+      <i class="fas fa-robot" aria-hidden="true"></i> Asistente de Voz
+    </button>
     <button type="button" class="tab" role="tab" aria-selected="false"
             aria-controls="panel-manual" id="tab-manual"
             onclick="elegirModo('manual')">
-      <i class="fas fa-keyboard" aria-hidden="true"></i> Solicitud Manual
-    </button>
-    <button type="button" class="tab" role="tab" aria-selected="false"
-            aria-controls="panel-voz" id="tab-voz"
-            onclick="elegirModo('voz')">
-      <i class="fas fa-microphone" aria-hidden="true"></i> Asistente de Voz
+      <i class="fas fa-clipboard-list" aria-hidden="true"></i> Formulario Manual
     </button>
   </div>
 
   <!-- ══════ PANEL MANUAL ══════ -->
   <div class="panel" id="panel-manual" role="tabpanel" aria-labelledby="tab-manual">
-    <div class="panel-nav-btns">
-      <button type="button" class="btn-cambiar-flujo"
-              onclick="volverAEleccion()"
-              aria-label="Volver a elegir cómo solicitar la cita">
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        Volver a la elección
-      </button>
-      <button type="button" class="btn-cambiar-flujo"
-              onclick="elegirModo('voz')"
-              aria-label="Cambiar al asistente de voz e inteligencia artificial">
-        <i class="fas fa-robot" aria-hidden="true"></i>
-        Prefiero el asistente de voz
-      </button>
-    </div>
 
     <div class="form-card">
       <form method="POST" id="form-cita">
@@ -228,9 +170,10 @@
             <span class="sr-only">(campo requerido)</span>
           </label>
           <select name="medico_id" id="sel-med" class="form-control"
-                  required onchange="cargarHorarios()">
+                  required onchange="onMedicoChange()">
             <option value="">— Primero selecciona una especialidad —</option>
           </select>
+          <div id="dias-info"></div>
         </div>
 
         <div class="form-row">
@@ -425,29 +368,89 @@ function mostrarSeccion(cual) { cual === 'eleccion' ? volverAEleccion() : elegir
 
 // ── Formulario manual ─────────────────────────────────────────────────────────
 {% if autenticado %}
+const DIAS_NOMBRE = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+let diasDisponiblesMedico = []; // días JS (0=Dom,1=Lun,...,6=Sáb)
+
 async function cargarMedicos() {
   const selEsp = document.getElementById('sel-esp');
   const selMed = document.getElementById('sel-med');
   if (!selEsp || !selMed) return;
   const espId = selEsp.value;
   selMed.innerHTML = '<option>Cargando...</option>';
+  diasDisponiblesMedico = [];
+  limpiarFechaYHorarios();
   if (!espId) { selMed.innerHTML = '<option>— Selecciona especialidad primero —</option>'; return; }
   const r    = await fetch(`/api/medicos/${espId}`);
   const data = await r.json();
   selMed.innerHTML = '<option value="">— Selecciona un médico —</option>' +
     data.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
-  const hw = document.getElementById('horarios-wrap');
-  if (hw) hw.innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Selecciona fecha para ver horarios.</p>';
+}
+
+async function onMedicoChange() {
+  const selMed   = document.getElementById('sel-med');
+  const inpFecha = document.getElementById('inp-fecha');
+  const wrap     = document.getElementById('horarios-wrap');
+  const diasInfo = document.getElementById('dias-info');
+  if (!selMed) return;
+  const medId = selMed.value;
+  diasDisponiblesMedico = [];
+  limpiarFechaYHorarios();
+
+  if (!medId) {
+    if (diasInfo) diasInfo.innerHTML = '';
+    return;
+  }
+
+  // Cargar los días disponibles del médico
+  try {
+    const r = await fetch(`/api/dias-disponibles/${medId}`);
+    const data = await r.json();
+    // Convertir días Python (0=Lun) a días JS (0=Dom): jsDay = (pyDay + 1) % 7
+    diasDisponiblesMedico = data.dias.map(d => (d + 1) % 7);
+
+    if (diasDisponiblesMedico.length === 0) {
+      if (diasInfo) diasInfo.innerHTML = '<p style="color:#ef4444;font-size:.85rem;">⚠️ Este médico no tiene horarios registrados.</p>';
+      if (inpFecha) inpFecha.disabled = true;
+    } else {
+      const nombresD = diasDisponiblesMedico.map(d => DIAS_NOMBRE[d]).join(', ');
+      if (diasInfo) diasInfo.innerHTML = `<p style="color:#60a5fa;font-size:.85rem;">📅 Días de atención: <strong>${nombresD}</strong></p>`;
+      if (inpFecha) inpFecha.disabled = false;
+    }
+  } catch(e) {
+    console.error('Error cargando días disponibles:', e);
+  }
+}
+
+function limpiarFechaYHorarios() {
+  const inpFecha = document.getElementById('inp-fecha');
+  const wrap     = document.getElementById('horarios-wrap');
+  const inpHora  = document.getElementById('inp-hora');
+  if (inpFecha) inpFecha.value = '';
+  if (inpHora)  inpHora.value = '';
+  if (wrap) wrap.innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Selecciona médico y fecha primero.</p>';
 }
 
 async function cargarHorarios() {
   const selMed   = document.getElementById('sel-med');
   const inpFecha = document.getElementById('inp-fecha');
   const wrap     = document.getElementById('horarios-wrap');
+  const inpHora  = document.getElementById('inp-hora');
   if (!selMed || !inpFecha || !wrap) return;
   const medId = selMed.value;
   const fecha = inpFecha.value;
   if (!medId || !fecha) return;
+
+  // Validar que el día seleccionado sea un día disponible
+  const fechaObj = new Date(fecha + 'T00:00:00');
+  const diaSemana = fechaObj.getUTCDay(); // 0=Dom,...,6=Sáb
+
+  if (diasDisponiblesMedico.length > 0 && !diasDisponiblesMedico.includes(diaSemana)) {
+    const nombresD = diasDisponiblesMedico.map(d => DIAS_NOMBRE[d]).join(', ');
+    wrap.innerHTML = `<p style="color:#ef4444;font-size:.85rem;">❌ El médico no atiende los <strong>${DIAS_NOMBRE[diaSemana]}</strong>.<br>Días disponibles: <strong>${nombresD}</strong></p>`;
+    if (inpHora) inpHora.value = '';
+    return;
+  }
+
   wrap.innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Cargando horarios...</p>';
   const r     = await fetch(`/api/horarios/${medId}/${fecha}`);
   const horas = await r.json();
@@ -465,6 +468,7 @@ function selHora(el, hora) {
 }
 {% else %}
 function cargarMedicos()  {}
+function onMedicoChange() {}
 function cargarHorarios() {}
 function selHora()        {}
 {% endif %}
@@ -736,7 +740,7 @@ async function procesarVoz(texto) {
         // Asignar especialidad directamente y saltar al paso 'medico'
         citaVoz.especialidad_id = espEncontrada;
         citaVoz.especialidad_nombre = ESPECIALIDADES_NOMBRE[espEncontrada] || 'Especialidad seleccionada';
-        responderIA(`Has seleccionado ${citaVoz.especialidad_nombre}. Buscando médicos disponibles...`, `Especialidad ${citaVoz.especialidad_nombre}.`);
+        addMsg('ia', `Has seleccionado ${citaVoz.especialidad_nombre}. Buscando médicos disponibles...`);
         avanzarPaso('medico');
         cargarMedicosVoz(citaVoz.especialidad_id).then(meds => {
           if(!meds.length) {
@@ -796,6 +800,26 @@ async function procesarVoz(texto) {
     case 'fecha': {
       const fechaISO = parsearFecha(t);
       if (!fechaISO || fechaISO < today) { responderIA('No entendí la fecha o es pasada. Di por ejemplo: mañana, o 20 de junio.','Di una fecha válida.'); return; }
+
+      // Validar que el día de la semana sea uno en que el médico atiende
+      try {
+        const resDias = await fetch(`/api/dias-disponibles/${citaVoz.medico_id}`);
+        const dataDias = await resDias.json();
+        const fechaObj = new Date(fechaISO + 'T00:00:00');
+        const diaSemanaJS = fechaObj.getUTCDay(); // 0=Dom,...,6=Sáb
+        // Convertir Python (0=Lun) a JS (0=Dom)
+        const diasJS = dataDias.dias.map(d => (d + 1) % 7);
+        const DIAS_VOZ = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        if (diasJS.length > 0 && !diasJS.includes(diaSemanaJS)) {
+          const nombresD = diasJS.map(d => DIAS_VOZ[d]).join(', ');
+          responderIA(
+            `El médico no atiende los ${DIAS_VOZ[diaSemanaJS]}. Solo atiende: ${nombresD}. Di otra fecha.`,
+            `No atiende ese día. Días disponibles: ${nombresD}. Di otra fecha.`
+          );
+          return;
+        }
+      } catch(e) { console.error('Error validando días:', e); }
+
       citaVoz.fecha = fechaISO; citaVoz.fecha_legible = formatFechaLegible(fechaISO);
       const hs = await cargarHorariosVoz(citaVoz.medico_id, fechaISO);
       if (!hs.length) { responderIA(`No hay horarios el ${citaVoz.fecha_legible}. Prueba otra fecha.`,'No hay horarios. Di otra fecha.'); citaVoz.fecha=null; citaVoz.fecha_legible=''; return; }

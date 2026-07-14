@@ -525,13 +525,62 @@ def api_medicos(esp_id):
     m=Medico.query.filter_by(especialidad_id=esp_id,disponible=True).all()
     return jsonify([{'id':x.id,'nombre':f'Dr. {x.nombre} {x.apellido}'} for x in m])
 
+@app.route('/api/dias-disponibles/<int:medico_id>')
+def api_dias_disponibles(medico_id):
+    horarios = HorarioMedico.query.filter_by(medico_id=medico_id).all()
+    dias = list(set(h.dia_semana for h in horarios))
+    return jsonify({'dias': sorted(dias)})
+
 @app.route('/api/horarios/<int:medico_id>/<fecha>')
-def api_horarios(medico_id,fecha):
-    todos=['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','16:30']
-    try: fo=datetime.strptime(fecha,'%Y-%m-%d').date()
-    except: return jsonify([])
-    ocup=[c.hora for c in Cita.query.filter_by(medico_id=medico_id,fecha=fo).filter(Cita.estado!='cancelada').all()]
-    return jsonify([h for h in todos if h not in ocup])
+def api_horarios(medico_id, fecha):
+    try:
+        fo = datetime.strptime(fecha, '%Y-%m-%d').date()
+    except:
+        return jsonify([])
+
+    dia_semana = fo.weekday()  # 0=Lunes, 6=Domingo
+
+    # Obtener horarios registrados para ese día de la semana
+    horarios_dia = HorarioMedico.query.filter_by(
+        medico_id=medico_id, dia_semana=dia_semana
+    ).all()
+
+    if not horarios_dia:
+        return jsonify([])
+
+    # Generar slots de 30 min a partir de los rangos registrados
+    from datetime import time as dt_time
+    slots = []
+    for h in horarios_dia:
+        # PyMySQL puede devolver TIME como timedelta; convertir a time
+        hi = h.hora_inicio
+        hf = h.hora_fin
+        if isinstance(hi, timedelta):
+            total_sec = int(hi.total_seconds())
+            hi = dt_time(total_sec // 3600, (total_sec % 3600) // 60)
+        if isinstance(hf, timedelta):
+            total_sec = int(hf.total_seconds())
+            hf = dt_time(total_sec // 3600, (total_sec % 3600) // 60)
+
+        current = datetime.combine(fo, hi)
+        end = datetime.combine(fo, hf)
+
+        # Protección: si hora_fin <= hora_inicio, saltar este rango
+        if end <= current:
+            continue
+
+        while current < end:
+            slots.append(current.strftime('%H:%M'))
+            current += timedelta(minutes=30)
+
+    slots = sorted(set(slots))
+
+    # Filtrar horas ya ocupadas por citas activas
+    ocupados = [c.hora for c in Cita.query.filter_by(
+        medico_id=medico_id, fecha=fo
+    ).filter(Cita.estado != 'cancelada').all()]
+
+    return jsonify([s for s in slots if s not in ocupados])
 
 @app.route('/admin')
 @login_required
@@ -807,17 +856,27 @@ def crear_horario():
     if current_user.rol != 'admin':
         return redirect(url_for('dashboard'))
 
+    hora_inicio = datetime.strptime(
+        request.form['hora_inicio'],
+        '%H:%M'
+    ).time()
+    hora_fin = datetime.strptime(
+        request.form['hora_fin'],
+        '%H:%M'
+    ).time()
+
+    if hora_fin <= hora_inicio:
+        flash(
+            'La hora de fin debe ser mayor que la hora de inicio.',
+            'error'
+        )
+        return redirect(url_for('admin'))
+
     horario = HorarioMedico(
         medico_id=int(request.form['medico_id']),
         dia_semana=int(request.form['dia_semana']),
-        hora_inicio=datetime.strptime(
-            request.form['hora_inicio'],
-            '%H:%M'
-        ).time(),
-        hora_fin=datetime.strptime(
-            request.form['hora_fin'],
-            '%H:%M'
-        ).time()
+        hora_inicio=hora_inicio,
+        hora_fin=hora_fin
     )
 
     db.session.add(horario)
@@ -864,19 +923,29 @@ def editar_horario(id):
 
     horario = HorarioMedico.query.get_or_404(id)
 
-    horario.dia_semana = int(
-        request.form['dia_semana']
-    )
-
-    horario.hora_inicio = datetime.strptime(
+    hora_inicio = datetime.strptime(
         request.form['hora_inicio'],
         '%H:%M'
     ).time()
 
-    horario.hora_fin = datetime.strptime(
+    hora_fin = datetime.strptime(
         request.form['hora_fin'],
         '%H:%M'
     ).time()
+
+    if hora_fin <= hora_inicio:
+        flash(
+            'La hora de fin debe ser mayor que la hora de inicio.',
+            'error'
+        )
+        return redirect(url_for('admin'))
+
+    horario.dia_semana = int(
+        request.form['dia_semana']
+    )
+
+    horario.hora_inicio = hora_inicio
+    horario.hora_fin = hora_fin
 
     db.session.commit()
 
