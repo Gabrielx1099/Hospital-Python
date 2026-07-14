@@ -270,6 +270,14 @@
 
   </div>
 </section>
+<!-- Toast Confirmación Bot -->
+<div id="toast-bot" style="position: fixed; bottom: 20px; right: 20px; background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 9999; display: flex; align-items: center; gap: 15px; border-left: 4px solid #3b82f6; animation: fadeIn 0.3s ease;">
+  <i class="fas fa-volume-up" style="color: #3b82f6; font-size: 1.5rem;"></i>
+  <div>
+    <h4 style="margin: 0 0 6px 0; color: #1e293b; font-size: 0.95rem;">Asistente de Voz</h4>
+    <button onclick="desactivarBotToast()" style="background: #ef4444; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer; font-weight: bold;">Desactivar</button>
+  </div>
+</div>
 
 {% endblock %}
 
@@ -280,6 +288,28 @@ document.addEventListener('DOMContentLoaded', function() {
     let recognition = null;
     let isSpeaking = false;
     let botIniciado = false;
+
+    window.desactivarBotToast = function() {
+        document.getElementById('toast-bot').style.display = 'none';
+        sessionStorage.setItem('botActivo', 'false');
+        botIniciado = true;
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (recognition) {
+            try { recognition.abort(); } catch(e) {}
+        }
+    };
+
+    const botGuardado = sessionStorage.getItem('botActivo');
+    if (botGuardado === 'false') {
+        document.getElementById('toast-bot').style.display = 'none';
+        botIniciado = true; // Ya está desactivado, no hablará
+    } else {
+        // Intento automático
+        setTimeout(() => hablarInicio(), 1000);
+        // Respaldo por políticas de Chrome
+        window.addEventListener('keydown', hablarInicio, { once: true });
+        window.addEventListener('click', hablarInicio, { once: true });
+    }
 
     function encenderMicrofonoInicio() {
         if (!SpeechRecognition || isSpeaking) return;
@@ -305,7 +335,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.href = "{{ url_for('solicitar_cita') }}";
                 });
             } else {
-                // Si no se entendió, se repite
                 hablarConfirmacion("No te entendí bien. Por favor, di mediante voz o de forma manual.", function() {
                     setTimeout(() => encenderMicrofonoInicio(), 500);
                 });
@@ -346,7 +375,6 @@ document.addEventListener('DOMContentLoaded', function() {
         botIniciado = true;
         isSpeaking = true;
         
-        // Cancelar cualquier audio pendiente
         window.speechSynthesis.cancel();
         
         const texto = "Bienvenido al Hospital Carlos Lanfranco La Hoz. ¿Deseas solicitar una cita médica mediante voz, o de forma manual? Di mediante voz, o de forma manual.";
@@ -355,24 +383,14 @@ document.addEventListener('DOMContentLoaded', function() {
         u.rate = 0.95;
         u.onend = function() {
             isSpeaking = false;
-            // Activar micrófono para esperar la respuesta
             setTimeout(() => encenderMicrofonoInicio(), 400);
         };
         u.onerror = function() {
             isSpeaking = false;
-            botIniciado = false; // Permitir reintento si falló por políticas del navegador
+            botIniciado = false;
         };
         window.speechSynthesis.speak(u);
     }
-
-    // 1. Intento automático (funciona si recargas o vienes de un enlace)
-    setTimeout(() => hablarInicio(), 1000);
-
-    // 2. Respaldo de Accesibilidad (Por política estricta de Google Chrome)
-    // Si Chrome bloqueó el audio porque el usuario apenas abrió el navegador,
-    // CUALQUIER interacción (presionar una tecla, un tap, un clic) lo activará instantáneamente.
-    window.addEventListener('keydown', hablarInicio, { once: true });
-    window.addEventListener('click', hablarInicio, { once: true });
 });
 </script>
 {% endblock %}
