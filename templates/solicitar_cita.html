@@ -15,6 +15,7 @@
        Es la primera cosa que ve/escucha cualquier usuario.
        Maneja: auth check (no autenticados) y selección voz/manual (autenticados).
   ══════════════════════════════════════════════════════════════════ -->
+{% macro chat_interface() %}
   <section
     class="asistente-envolvente"
     role="region"
@@ -97,6 +98,11 @@
     </button>
 
   </section>
+{% endmacro %}
+
+  {% if not autenticado %}
+  {{ chat_interface() }}
+  {% endif %}
 
   <!-- ══════ ACCESOS VISUALES PARA NO AUTENTICADOS ══════
        Complemento visual: permite que usuarios videntes actúen sin leer el chat.
@@ -214,53 +220,9 @@
   </div>
 
   <!-- ══════ PANEL VOZ — Barra de pasos + resumen (el chat está arriba siempre) ══════ -->
+  <!-- ══════ PANEL VOZ ══════ -->
   <div class="panel" id="panel-voz" role="tabpanel" aria-labelledby="tab-voz">
-    <div class="panel-nav-btns">
-      <button type="button" class="btn-cambiar-flujo"
-              onclick="volverAEleccion()"
-              aria-label="Volver a elegir cómo solicitar la cita">
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        Volver a la elección
-      </button>
-      <button type="button" class="btn-cambiar-flujo"
-              id="btn-ir-a-manual"
-              onclick="irAManual()"
-              aria-label="Cambiar al formulario manual conservando los datos ya capturados">
-        <i class="fas fa-clipboard-list" aria-hidden="true"></i>
-        Prefiero llenarlo manualmente
-      </button>
-    </div>
-
-    <div class="voz-extra-panel">
-      <div class="voz-steps" aria-label="Progreso del proceso de solicitud de cita">
-        <div class="voz-step" id="step-esp"><div class="num">1</div>Especialidad</div>
-        <div class="voz-step" id="step-med"><div class="num">2</div>Médico</div>
-        <div class="voz-step" id="step-fecha"><div class="num">3</div>Fecha</div>
-        <div class="voz-step" id="step-hora"><div class="num">4</div>Hora</div>
-        <div class="voz-step" id="step-motivo"><div class="num">5</div>Motivo</div>
-        <div class="voz-step" id="step-confirm"><div class="num">6</div>Confirmar</div>
-      </div>
-
-      <div class="voz-resumen" id="voz-resumen"
-           aria-label="Resumen de los datos de tu cita capturados hasta ahora">
-        <div class="voz-resumen-title">
-          <i class="fas fa-clipboard-list" aria-hidden="true"></i> Datos de tu cita
-        </div>
-        <div class="voz-resumen-grid">
-          <div class="voz-campo" id="campo-esp"><span>Especialidad</span><strong>—</strong></div>
-          <div class="voz-campo" id="campo-med"><span>Médico</span><strong>—</strong></div>
-          <div class="voz-campo" id="campo-fecha"><span>Fecha</span><strong>—</strong></div>
-          <div class="voz-campo" id="campo-hora"><span>Hora</span><strong>—</strong></div>
-          <div class="voz-campo" id="campo-motivo"><span>Motivo</span><strong>—</strong></div>
-        </div>
-      </div>
-
-      <button type="button" class="btn-nav-outline" onclick="resetChat()"
-              style="margin-top:10px;color:#60a5fa;border-color:#60a5fa;"
-              aria-label="Reiniciar toda la conversación con el asistente desde el principio">
-        <i class="fas fa-redo" aria-hidden="true"></i> Reiniciar conversación
-      </button>
-    </div>
+    {{ chat_interface() }}
   </div>
   {% endif %}{# fin autenticado #}
 
