@@ -72,7 +72,7 @@ def clasificar_sintomas(texto):
 
 app.config['SECRET_KEY'] = 'hospital_lanfranco_secret_2024'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost:3306/hospital_lanfranco'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/hospital_lanfranco'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -218,21 +218,37 @@ def obtener_datos_reportes():
 
     hace_6_meses = datetime.utcnow() - timedelta(days=180)
     citas_mes = db.session.query(Cita).filter(Cita.creado_en >= hace_6_meses).all()
+
     meses_dict = {}
     for c in citas_mes:
         clave = c.creado_en.strftime('%Y-%m')
         meses_dict[clave] = meses_dict.get(clave, 0) + 1
-    por_mes = sorted([{'label': k, 'value': v} for k, v in meses_dict.items()])
+
+    por_mes = sorted(
+        [{'label': k, 'value': v} for k, v in meses_dict.items()],
+        key=lambda x: x['label']
+    )
 
     top_medicos_raw = db.session.query(
-        Medico.nombre, Medico.apellido, func.count(Cita.id).label('total')
-    ).join(Cita, Cita.medico_id == Medico.id).group_by(Medico.id).order_by(desc('total')).limit(5).all()
+        Medico.nombre,
+        Medico.apellido,
+        func.count(Cita.id).label('total')
+    ).join(
+        Cita, Cita.medico_id == Medico.id
+    ).group_by(
+        Medico.id
+    ).order_by(
+        desc('total')
+    ).limit(5).all()
 
     return {
         'por_especialidad': [{'label': n, 'value': c} for n, c in por_especialidad],
         'por_estado': [{'label': e, 'value': c} for e, c in por_estado],
         'por_mes': por_mes,
-        'top_medicos': [{'nombre': f'Dr. {n} {a}', 'citas': t} for n, a, t in top_medicos_raw]
+        'top_medicos': [
+            {'nombre': f'Dr. {n} {a}', 'citas': t}
+            for n, a, t in top_medicos_raw
+        ]
     }
 def inicializar_db():
     db.create_all()
